@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../core/models/report_model.dart';
 import '../../core/utils/format.dart';
+import '../../core/widgets/charts.dart';
 import '../../core/widgets/common.dart';
 import '../katalog/data/katalog_repository.dart';
 
@@ -171,13 +172,18 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _MonthlyBars(months: _data!.months),
+                    MonthlyLineChart(months: _data!.months),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _legend(FinKuColors.primary, 'Penjualan'),
-                        const SizedBox(width: 14),
-                        _legend(FinKuColors.success, 'Laba Kotor'),
+                    const ChartLegend(
+                      items: [
+                        ChartLegendEntry(
+                          color: FinKuColors.primary,
+                          label: 'Penjualan',
+                        ),
+                        ChartLegendEntry(
+                          color: FinKuColors.success,
+                          label: 'Laba Kotor',
+                        ),
                       ],
                     ),
                   ],
@@ -200,98 +206,4 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
     );
   }
 
-  Widget _legend(Color color, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: FinKuColors.textSecondary),
-        ),
-      ],
-    );
-  }
-}
-
-/// Bar chart horizontal sederhana, meniru grafik CSS pada dashboard web.
-class _MonthlyBars extends StatelessWidget {
-  const _MonthlyBars({required this.months});
-
-  final List<MonthlyReport> months;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxValue = months.fold<double>(
-      1,
-      (max, m) => m.penjualan > max ? m.penjualan : max,
-    );
-
-    return Column(
-      children: [
-        for (final m in months)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 30,
-                  child: Text(
-                    m.nama,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: FinKuColors.textSecondary,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      _bar(m.penjualan, maxValue, FinKuColors.primary),
-                      const SizedBox(height: 2),
-                      _bar(
-                        m.laba < 0 ? 0 : m.laba,
-                        maxValue,
-                        FinKuColors.success,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                SizedBox(
-                  width: 84,
-                  child: Text(
-                    Fmt.rupiah(m.penjualan),
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: FinKuColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _bar(double value, double maxValue, Color color) {
-    final ratio = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.0, 1.0);
-    return LayoutBuilder(
-      builder: (context, constraints) => Container(
-        height: 6,
-        width: constraints.maxWidth * ratio,
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(3),
-        ),
-      ),
-    );
-  }
 }

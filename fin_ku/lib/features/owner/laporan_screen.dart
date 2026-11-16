@@ -7,6 +7,7 @@ import '../../core/models/report_model.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/utils/file_exporter.dart';
 import '../../core/utils/format.dart';
+import '../../core/widgets/charts.dart';
 import '../../core/widgets/common.dart';
 import '../katalog/data/katalog_repository.dart';
 
@@ -112,6 +113,8 @@ class _OwnerLaporanScreenState extends State<OwnerLaporanScreen> {
               const SizedBox(height: 200),
             ] else if (_data != null) ...[
               _buildSummary(_data!),
+              const SizedBox(height: 16),
+              _buildMonthlyChart(_data!),
               const SizedBox(height: 16),
               _buildMonthlyBreakdown(_data!),
               const SizedBox(height: 16),
@@ -252,6 +255,36 @@ class _OwnerLaporanScreenState extends State<OwnerLaporanScreen> {
                 color: color ?? FinKuColors.textPrimary,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMonthlyChart(LaporanData data) {
+    return FinKuCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Grafik Bulanan $_year',
+            style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          MonthlyLineChart(months: data.monthlyData, height: 180),
+          const SizedBox(height: 10),
+          const ChartLegend(
+            items: [
+              ChartLegendEntry(
+                color: FinKuColors.primary,
+                label: 'Penjualan',
+              ),
+              ChartLegendEntry(
+                color: FinKuColors.success,
+                label: 'Laba Kotor',
+              ),
+            ],
           ),
         ],
       ),
