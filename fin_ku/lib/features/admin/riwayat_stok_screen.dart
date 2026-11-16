@@ -192,7 +192,7 @@ class _RiwayatStokScreenState extends State<RiwayatStokScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.readOnly ? 'Riwayat Stok (Data Toko)' : 'Riwayat Stok'),
+        title: const Text('Riwayat Stok'),
         leading: widget.isEmbedded
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),

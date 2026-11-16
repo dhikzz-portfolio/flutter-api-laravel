@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class LaporanController extends Controller
 {
@@ -25,7 +28,7 @@ class LaporanController extends Controller
         $penjualan = $query->latest('tanggal')->get();
 
         $totalPenjualan = $penjualan->sum('total');
-        $totalHPP = $penjualan->sum(fn($s) => $s->saleDetails->sum('hpp_total'));
+        $totalHPP = $penjualan->sum(fn ($s) => $s->saleDetails->sum('hpp_total'));
         $labaKotor = $totalPenjualan - $totalHPP;
 
         // Monthly breakdown
@@ -44,7 +47,8 @@ class LaporanController extends Controller
                     ->whereMonth('tanggal', $item->bulan)
                     ->with('saleDetails')
                     ->get()
-                    ->sum(fn($s) => $s->saleDetails->sum('hpp_total'));
+                    ->sum(fn ($s) => $s->saleDetails->sum('hpp_total'));
+
                 return [
                     'bulan' => now()->month($item->bulan)->translatedFormat('F'),
                     'penjualan' => $item->total_penjualan,
@@ -74,42 +78,42 @@ class LaporanController extends Controller
 
         $penjualan = $query->latest('tanggal')->get();
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
 
         // Header
         $sheet->setCellValue('A1', 'Laporan Laba/Rugi');
-        $sheet->setCellValue('A2', 'Periode: ' . ($month ? now()->month($month)->translatedFormat('F ') : '') . $year);
+        $sheet->setCellValue('A2', 'Periode: '.($month ? now()->month($month)->translatedFormat('F ') : '').$year);
         $sheet->mergeCells('A1:D1');
         $sheet->mergeCells('A2:D2');
 
         // Column headers
         $headers = ['Tanggal', 'Invoice', 'Pembeli', 'Total Penjualan', 'HPP', 'Laba Kotor'];
         foreach ($headers as $col => $header) {
-            $sheet->setCellValue(chr(65 + $col) . '4', $header);
+            $sheet->setCellValue(chr(65 + $col).'4', $header);
         }
 
         // Data
         $row = 5;
         foreach ($penjualan as $sale) {
             $hpp = $sale->saleDetails->sum('hpp_total');
-            $sheet->setCellValue('A' . $row, $sale->tanggal->format('d/m/Y'));
-            $sheet->setCellValue('B' . $row, $sale->invoice);
-            $sheet->setCellValue('C' . $row, $sale->buyer->nama);
-            $sheet->setCellValue('D' . $row, $sale->total);
-            $sheet->setCellValue('E' . $row, $hpp);
-            $sheet->setCellValue('F' . $row, $sale->total - $hpp);
+            $sheet->setCellValue('A'.$row, $sale->tanggal->format('d/m/Y'));
+            $sheet->setCellValue('B'.$row, $sale->invoice);
+            $sheet->setCellValue('C'.$row, $sale->buyer->nama);
+            $sheet->setCellValue('D'.$row, $sale->total);
+            $sheet->setCellValue('E'.$row, $hpp);
+            $sheet->setCellValue('F'.$row, $sale->total - $hpp);
             $row++;
         }
 
         // Totals
-        $sheet->setCellValue('C' . $row, 'TOTAL');
-        $sheet->setCellValue('D' . $row, $penjualan->sum('total'));
-        $sheet->setCellValue('E' . $row, $penjualan->sum(fn($s) => $s->saleDetails->sum('hpp_total')));
-        $sheet->setCellValue('F' . $row, $penjualan->sum('total') - $penjualan->sum(fn($s) => $s->saleDetails->sum('hpp_total')));
+        $sheet->setCellValue('C'.$row, 'TOTAL');
+        $sheet->setCellValue('D'.$row, $penjualan->sum('total'));
+        $sheet->setCellValue('E'.$row, $penjualan->sum(fn ($s) => $s->saleDetails->sum('hpp_total')));
+        $sheet->setCellValue('F'.$row, $penjualan->sum('total') - $penjualan->sum(fn ($s) => $s->saleDetails->sum('hpp_total')));
 
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer_Xlsx($spreadsheet);
-        $filename = 'Laporan_Laba_Rugi_' . $year . ($month ? '_' . $month : '') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+        $filename = 'Laporan_Laba_Rugi_'.$year.($month ? '_'.$month : '').'.xlsx';
 
         return response()->streamDownload(function () use ($writer) {
             $writer->save('php://output');
@@ -133,14 +137,14 @@ class LaporanController extends Controller
 
         $penjualan = $query->latest('tanggal')->get();
         $totalPenjualan = $penjualan->sum('total');
-        $totalHPP = $penjualan->sum(fn($s) => $s->saleDetails->sum('hpp_total'));
+        $totalHPP = $penjualan->sum(fn ($s) => $s->saleDetails->sum('hpp_total'));
         $labaKotor = $totalPenjualan - $totalHPP;
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('owner.laporan.pdf', compact(
+        $pdf = Pdf::loadView('owner.laporan.pdf', compact(
             'penjualan', 'totalPenjualan', 'totalHPP', 'labaKotor', 'year', 'month'
         ));
 
-        $filename = 'Laporan_Laba_Rugi_' . $year . ($month ? '_' . $month : '') . '.pdf';
+        $filename = 'Laporan_Laba_Rugi_'.$year.($month ? '_'.$month : '').'.pdf';
 
         return $pdf->download($filename);
     }

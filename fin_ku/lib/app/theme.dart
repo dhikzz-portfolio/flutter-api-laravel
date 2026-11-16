@@ -46,6 +46,7 @@ class FinKuTheme {
         foregroundColor: FinKuColors.textPrimary,
         elevation: 0,
         centerTitle: false,
+        titleSpacing: 56,
         titleTextStyle: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,

@@ -10,7 +10,11 @@ import '../transaksi/data/transaksi_repository.dart';
 
 /// Barang keluar: daftar dokumen dan pencatatan barang rusak/expired/keluar.
 class BarangKeluarScreen extends StatefulWidget {
-  const BarangKeluarScreen({super.key, this.readOnly = false, this.isEmbedded = false});
+  const BarangKeluarScreen({
+    super.key,
+    this.readOnly = false,
+    this.isEmbedded = false,
+  });
 
   final bool readOnly;
   final bool isEmbedded;
@@ -20,8 +24,9 @@ class BarangKeluarScreen extends StatefulWidget {
 }
 
 class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
-  late final KatalogRepository _repo =
-      KatalogRepository(basePath: widget.readOnly ? '/api/v1/owner' : '/api/v1/admin');
+  late final KatalogRepository _repo = KatalogRepository(
+    basePath: widget.readOnly ? '/api/v1/owner' : '/api/v1/admin',
+  );
   final _scroll = ScrollController();
 
   List<StockOut> _items = [];
@@ -30,8 +35,16 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   String _error = '';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   bool get _canLoadMore => _page < _lastPage && !_loadingMore;
+
+  String get _dateFromParam =>
+      _dateFrom == null ? '' : _dateFrom!.toIso8601String().substring(0, 10);
+
+  String get _dateToParam =>
+      _dateTo == null ? '' : _dateTo!.toIso8601String().substring(0, 10);
 
   @override
   void initState() {
@@ -58,7 +71,10 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
       _error = '';
     });
     try {
-      final page = await _repo.barangKeluar();
+      final page = await _repo.barangKeluar(
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
+      );
       if (!mounted) return;
       setState(() {
         _items = page.items;
@@ -76,10 +92,16 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
-      final next = await _repo.barangKeluar(page: _page + 1);
+      final next = await _repo.barangKeluar(
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
+        page: _page + 1,
+      );
       if (!mounted) return;
       setState(() {
-        _items.addAll(next.items.where((n) => _items.every((e) => e.id != n.id)));
+        _items.addAll(
+          next.items.where((n) => _items.every((e) => e.id != n.id)),
+        );
         _page = next.currentPage;
         _lastPage = next.lastPage;
       });
@@ -100,13 +122,8 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
   }
 
   void _openDetail(StockOut item) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
+    showAppPopup<void>(
+      context,
       builder: (_) => _BarangKeluarDetail(item: item),
     );
   }
@@ -115,7 +132,9 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.readOnly ? 'Barang Keluar (Data Toko)' : 'Barang Keluar'),
+        title: Text(
+          widget.readOnly ? 'Barang Keluar (Lihat Saja)' : 'Barang Keluar',
+        ),
         leading: widget.isEmbedded
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -133,94 +152,120 @@ class _BarangKeluarScreenState extends State<BarangKeluarScreen> {
               label: const Text('Catat Keluar'),
               onPressed: _openCreate,
             ),
-      body: _loading
-          ? const LoadingView()
-          : _error.isNotEmpty
-              ? ErrorView(message: _error, onRetry: _load)
-              : _items.isEmpty
-                  ? const EmptyView(
-                      icon: Icons.outbox_outlined,
-                      title: 'Belum ada barang keluar',
-                      subtitle: 'Catat barang rusak, expired, atau diberikan.',
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        controller: _scroll,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _items.length + (_canLoadMore ? 1 : 0),
-                        itemBuilder: (context, i) {
-                          if (i >= _items.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: DateRangeFilterBar(
+              from: _dateFrom,
+              to: _dateTo,
+              onChanged: (from, to) {
+                setState(() {
+                  _dateFrom = from;
+                  _dateTo = to;
+                });
+                _load();
+              },
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const LoadingView()
+                : _error.isNotEmpty
+                ? ErrorView(message: _error, onRetry: _load)
+                : _items.isEmpty
+                ? const EmptyView(
+                    icon: Icons.outbox_outlined,
+                    title: 'Belum ada barang keluar',
+                    subtitle: 'Catat barang rusak, expired, atau diberikan.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _items.length + (_canLoadMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i >= _items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
                                 ),
                               ),
-                            );
-                          }
-                          final item = _items[i];
-                          final totalQty = item.details.fold<int>(0, (a, d) => a + d.jumlah);
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => _openDetail(item),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: FinKuColors.cardBorder),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          Fmt.tanggal(item.tanggal),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13.5,
-                                          ),
+                            ),
+                          );
+                        }
+                        final item = _items[i];
+                        final totalQty = item.details.fold<int>(
+                          0,
+                          (a, d) => a + d.jumlah,
+                        );
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _openDetail(item),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: FinKuColors.cardBorder),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        Fmt.tanggal(item.tanggal),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13.5,
                                         ),
                                       ),
-                                      StatusChip(
-                                        label: '${item.details.length} PRODUK',
-                                        color: FinKuColors.primary,
-                                      ),
-                                    ],
-                                  ),
-                                  if (item.keterangan.isNotEmpty) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.keterangan,
-                                      style: const TextStyle(
-                                        fontSize: 12.5,
-                                        color: FinKuColors.textSecondary,
-                                      ),
+                                    ),
+                                    StatusChip(
+                                      label: '${item.details.length} PRODUK',
+                                      color: FinKuColors.primary,
                                     ),
                                   ],
-                                  const SizedBox(height: 6),
+                                ),
+                                if (item.keterangan.isNotEmpty) ...[
+                                  const SizedBox(height: 4),
                                   Text(
-                                    'Total keluar $totalQty unit · oleh ${item.userNama}',
+                                    item.keterangan,
                                     style: const TextStyle(
-                                      fontSize: 11.5,
+                                      fontSize: 12.5,
                                       color: FinKuColors.textSecondary,
                                     ),
                                   ),
                                 ],
-                              ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Total keluar $totalQty unit · oleh ${item.userNama}',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: FinKuColors.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -232,22 +277,35 @@ class _BarangKeluarDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.92,
-      builder: (context, controller) => ListView(
-        controller: controller,
-        padding: const EdgeInsets.all(20),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Detail Barang Keluar',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Detail Barang Keluar',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Tutup',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
             '${Fmt.tanggal(item.tanggal)} · ${item.userNama}',
-            style: const TextStyle(fontSize: 12.5, color: FinKuColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: FinKuColors.textSecondary,
+            ),
           ),
           if (item.keterangan.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -266,11 +324,16 @@ class _BarangKeluarDetail extends StatelessWidget {
                       children: [
                         Text(
                           d.namaProduk,
-                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          d.keterangan.isEmpty ? d.jenis : '${d.jenis} · ${d.keterangan}',
+                          d.keterangan.isEmpty
+                              ? d.jenis
+                              : '${d.jenis} · ${d.keterangan}',
                           style: const TextStyle(
                             fontSize: 11.5,
                             color: FinKuColors.textSecondary,
@@ -383,16 +446,21 @@ class _BarangKeluarFormScreenState extends State<BarangKeluarFormScreen> {
         return;
       }
       if (jumlah > item.product.stok) {
-        setState(() => _error = 'Jumlah ${item.product.nama} melebihi stok ${item.product.stok}.');
+        setState(
+          () => _error =
+              'Jumlah ${item.product.nama} melebihi stok ${item.product.stok}.',
+        );
         return;
       }
-      payload.add(CartProduct(
-        productId: item.product.id,
-        nama: item.product.nama,
-        jumlah: jumlah,
-        jenis: item.jenis,
-        keteranganItem: item.keterangan.text.trim(),
-      ));
+      payload.add(
+        CartProduct(
+          productId: item.product.id,
+          nama: item.product.nama,
+          jumlah: jumlah,
+          jenis: item.jenis,
+          keteranganItem: item.keterangan.text.trim(),
+        ),
+      );
     }
 
     setState(() {
@@ -432,7 +500,10 @@ class _BarangKeluarFormScreenState extends State<BarangKeluarFormScreen> {
                     children: [
                       const Text(
                         'Keterangan Umum',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       TextField(
@@ -456,7 +527,10 @@ class _BarangKeluarFormScreenState extends State<BarangKeluarFormScreen> {
                           const Expanded(
                             child: Text(
                               'Detail Barang Keluar',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                           IconicAction(
@@ -489,7 +563,10 @@ class _BarangKeluarFormScreenState extends State<BarangKeluarFormScreen> {
                   const SizedBox(height: 10),
                   Text(
                     _error,
-                    style: const TextStyle(color: FinKuColors.danger, fontSize: 12.5),
+                    style: const TextStyle(
+                      color: FinKuColors.danger,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -515,8 +592,8 @@ class _BarangKeluarFormScreenState extends State<BarangKeluarFormScreen> {
 
 class _KeluarItem {
   _KeluarItem(this.product)
-      : jumlah = TextEditingController(),
-        keterangan = TextEditingController();
+    : jumlah = TextEditingController(),
+      keterangan = TextEditingController();
 
   Product product;
   String jenis = 'RUSAK';
@@ -584,7 +661,11 @@ class _KeluarItemCard extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline, color: FinKuColors.danger, size: 20),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: FinKuColors.danger,
+                  size: 20,
+                ),
               ),
             ],
           ),

@@ -56,6 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Kombinasi pesan kecil di atas tombol.
         if (_generalError.isEmpty && _fieldError.isEmpty) _generalError = e.message;
       });
+    } catch (e) {
+      setState(() {
+        _generalError = 'Terjadi kesalahan: $e';
+      });
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

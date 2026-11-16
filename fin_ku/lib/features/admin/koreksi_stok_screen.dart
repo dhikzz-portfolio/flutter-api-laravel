@@ -28,8 +28,16 @@ class _KoreksiStokScreenState extends State<KoreksiStokScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   String _error = '';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   bool get _canLoadMore => _page < _lastPage && !_loadingMore;
+
+  String get _dateFromParam =>
+      _dateFrom == null ? '' : _dateFrom!.toIso8601String().substring(0, 10);
+
+  String get _dateToParam =>
+      _dateTo == null ? '' : _dateTo!.toIso8601String().substring(0, 10);
 
   @override
   void initState() {
@@ -56,7 +64,10 @@ class _KoreksiStokScreenState extends State<KoreksiStokScreen> {
       _error = '';
     });
     try {
-      final page = await _repo.koreksiStok();
+      final page = await _repo.koreksiStok(
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
+      );
       if (!mounted) return;
       setState(() {
         _items = page.items;
@@ -74,10 +85,16 @@ class _KoreksiStokScreenState extends State<KoreksiStokScreen> {
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
-      final next = await _repo.koreksiStok(page: _page + 1);
+      final next = await _repo.koreksiStok(
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
+        page: _page + 1,
+      );
       if (!mounted) return;
       setState(() {
-        _items.addAll(next.items.where((n) => _items.every((e) => e.id != n.id)));
+        _items.addAll(
+          next.items.where((n) => _items.every((e) => e.id != n.id)),
+        );
         _page = next.currentPage;
         _lastPage = next.lastPage;
       });
@@ -98,15 +115,7 @@ class _KoreksiStokScreenState extends State<KoreksiStokScreen> {
   }
 
   void _openDetail(StockAdjustment item) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) => _KoreksiDetail(item: item),
-    );
+    showAppPopup<void>(context, builder: (_) => _KoreksiDetail(item: item));
   }
 
   @override
@@ -129,102 +138,127 @@ class _KoreksiStokScreenState extends State<KoreksiStokScreen> {
         label: const Text('Koreksi Baru'),
         onPressed: _openCreate,
       ),
-      body: _loading
-          ? const LoadingView()
-          : _error.isNotEmpty
-              ? ErrorView(message: _error, onRetry: _load)
-              : _items.isEmpty
-                  ? const EmptyView(
-                      icon: Icons.tune,
-                      title: 'Belum ada koreksi stok',
-                      subtitle: 'Catat hasil stok opname fisik di sini.',
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        controller: _scroll,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _items.length + (_canLoadMore ? 1 : 0),
-                        itemBuilder: (context, i) {
-                          if (i >= _items.length) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 14),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: DateRangeFilterBar(
+              from: _dateFrom,
+              to: _dateTo,
+              onChanged: (from, to) {
+                setState(() {
+                  _dateFrom = from;
+                  _dateTo = to;
+                });
+                _load();
+              },
+            ),
+          ),
+          Expanded(
+            child: _loading
+                ? const LoadingView()
+                : _error.isNotEmpty
+                ? ErrorView(message: _error, onRetry: _load)
+                : _items.isEmpty
+                ? const EmptyView(
+                    icon: Icons.tune,
+                    title: 'Belum ada koreksi stok',
+                    subtitle: 'Catat hasil stok opname fisik di sini.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _items.length + (_canLoadMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i >= _items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
                                 ),
-                              ),
-                            );
-                          }
-                          final item = _items[i];
-                          final selisih =
-                              item.details.fold<int>(0, (a, d) => a + d.selisih);
-                          return InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => _openDetail(item),
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: FinKuColors.cardBorder),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          Fmt.tanggal(item.tanggal),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 13.5,
-                                          ),
-                                        ),
-                                      ),
-                                      StatusChip(
-                                        label: '${item.details.length} PRODUK',
-                                        color: FinKuColors.primary,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Total selisih: ${selisih >= 0 ? '+' : ''}$selisih unit',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: selisih == 0
-                                              ? FinKuColors.textSecondary
-                                              : (selisih > 0
-                                                  ? FinKuColors.success
-                                                  : FinKuColors.danger),
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        item.userNama,
-                                        style: const TextStyle(
-                                          fontSize: 11.5,
-                                          color: FinKuColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
                               ),
                             ),
                           );
-                        },
-                      ),
+                        }
+                        final item = _items[i];
+                        final selisih = item.details.fold<int>(
+                          0,
+                          (a, d) => a + d.selisih,
+                        );
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _openDetail(item),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: FinKuColors.cardBorder),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        Fmt.tanggal(item.tanggal),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13.5,
+                                        ),
+                                      ),
+                                    ),
+                                    StatusChip(
+                                      label: '${item.details.length} PRODUK',
+                                      color: FinKuColors.primary,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Total selisih: ${selisih >= 0 ? '+' : ''}$selisih unit',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: selisih == 0
+                                            ? FinKuColors.textSecondary
+                                            : (selisih > 0
+                                                  ? FinKuColors.success
+                                                  : FinKuColors.danger),
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      item.userNama,
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        color: FinKuColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -236,22 +270,35 @@ class _KoreksiDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.92,
-      builder: (context, controller) => ListView(
-        controller: controller,
-        padding: const EdgeInsets.all(20),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Detail Koreksi Stok',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Detail Koreksi Stok',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Tutup',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
           Text(
             '${Fmt.tanggal(item.tanggal)} · ${item.userNama}',
-            style: const TextStyle(fontSize: 12.5, color: FinKuColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: FinKuColors.textSecondary,
+            ),
           ),
           const Divider(height: 24),
           for (final d in item.details)
@@ -267,7 +314,10 @@ class _KoreksiDetail extends StatelessWidget {
                 children: [
                   Text(
                     d.namaProduk,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -279,7 +329,9 @@ class _KoreksiDetail extends StatelessWidget {
                         value: '${d.selisih >= 0 ? '+' : ''}${d.selisih}',
                         color: d.selisih == 0
                             ? FinKuColors.textPrimary
-                            : (d.selisih > 0 ? FinKuColors.success : FinKuColors.danger),
+                            : (d.selisih > 0
+                                  ? FinKuColors.success
+                                  : FinKuColors.danger),
                       ),
                     ],
                   ),
@@ -315,7 +367,10 @@ class _Metric extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 10.5, color: FinKuColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: FinKuColors.textSecondary,
+            ),
           ),
           Text(
             value,
@@ -403,20 +458,26 @@ class _KoreksiStokFormScreenState extends State<KoreksiStokFormScreen> {
     for (final item in _items) {
       final fisik = int.tryParse(item.stokFisik.text.trim());
       if (fisik == null || fisik < 0) {
-        setState(() => _error = 'Stok fisik ${item.product.nama} wajib angka >= 0.');
+        setState(
+          () => _error = 'Stok fisik ${item.product.nama} wajib angka >= 0.',
+        );
         return;
       }
       if (item.alasan.text.trim().isEmpty) {
-        setState(() => _error = 'Alasan koreksi ${item.product.nama} wajib diisi.');
+        setState(
+          () => _error = 'Alasan koreksi ${item.product.nama} wajib diisi.',
+        );
         return;
       }
-      payload.add(CartProduct(
-        productId: item.product.id,
-        nama: item.product.nama,
-        jumlah: 1,
-        stokFisik: fisik,
-        alasan: item.alasan.text.trim(),
-      ));
+      payload.add(
+        CartProduct(
+          productId: item.product.id,
+          nama: item.product.nama,
+          jumlah: 1,
+          stokFisik: fisik,
+          alasan: item.alasan.text.trim(),
+        ),
+      );
     }
 
     setState(() {
@@ -459,7 +520,10 @@ class _KoreksiStokFormScreenState extends State<KoreksiStokFormScreen> {
                               children: [
                                 Text(
                                   'Form Koreksi Stok',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                                 Text(
                                   'Selisih = Stok Fisik - Stok Sistem',
@@ -500,7 +564,10 @@ class _KoreksiStokFormScreenState extends State<KoreksiStokFormScreen> {
                   const SizedBox(height: 10),
                   Text(
                     _error,
-                    style: const TextStyle(color: FinKuColors.danger, fontSize: 12.5),
+                    style: const TextStyle(
+                      color: FinKuColors.danger,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -526,8 +593,8 @@ class _KoreksiStokFormScreenState extends State<KoreksiStokFormScreen> {
 
 class _KoreksiItem {
   _KoreksiItem(this.product)
-      : stokFisik = TextEditingController(),
-        alasan = TextEditingController();
+    : stokFisik = TextEditingController(),
+      alasan = TextEditingController();
 
   Product product;
   final TextEditingController stokFisik;
@@ -597,7 +664,11 @@ class _KoreksiItemCard extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline, color: FinKuColors.danger, size: 20),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: FinKuColors.danger,
+                  size: 20,
+                ),
               ),
             ],
           ),
@@ -607,11 +678,14 @@ class _KoreksiItemCard extends StatelessWidget {
               Expanded(
                 child: InputDecorator(
                   decoration: const InputDecoration(
-                    labelText: 'Stok Sistem',
+                    labelText: 'Sistem',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
-                  child: Text('${item.product.stok}', style: const TextStyle(fontSize: 13.5)),
+                  child: Text(
+                    '${item.product.stok}',
+                    style: const TextStyle(fontSize: 13.5),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -621,7 +695,7 @@ class _KoreksiItemCard extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   onChanged: (_) => onChanged(),
                   decoration: const InputDecoration(
-                    labelText: 'Stok Fisik',
+                    labelText: 'Fisik',
                     border: OutlineInputBorder(),
                     isDense: true,
                   ),
@@ -636,15 +710,19 @@ class _KoreksiItemCard extends StatelessWidget {
                     isDense: true,
                   ),
                   child: Text(
-                    selisih == null ? '-' : '${selisih >= 0 ? '+' : ''}$selisih',
+                    selisih == null
+                        ? '-'
+                        : '${selisih >= 0 ? '+' : ''}$selisih',
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: selisih == null
                           ? FinKuColors.textSecondary
                           : (selisih == 0
-                              ? FinKuColors.textPrimary
-                              : (selisih > 0 ? FinKuColors.success : FinKuColors.danger)),
+                                ? FinKuColors.textPrimary
+                                : (selisih > 0
+                                      ? FinKuColors.success
+                                      : FinKuColors.danger)),
                     ),
                   ),
                 ),

@@ -151,10 +151,20 @@ class KatalogRepository {
 
   // ===================== Barang Keluar (admin & owner, view) =====================
 
-  Future<ApiPage<StockOut>> barangKeluar({int page = 1, int perPage = 15}) async {
+  Future<ApiPage<StockOut>> barangKeluar({
+    String dateFrom = '',
+    String dateTo = '',
+    int page = 1,
+    int perPage = 15,
+  }) async {
     final body = await ApiClient.get(
       '$basePath/barang-keluar',
-      query: {'page': '$page', 'per_page': '$perPage'},
+      query: {
+        'date_from': dateFrom,
+        'date_to': dateTo,
+        'page': '$page',
+        'per_page': '$perPage',
+      },
     );
     return ApiPage.parse<StockOut>(body, StockOut.fromJson);
   }
@@ -185,10 +195,20 @@ class KatalogRepository {
 
   // ===================== Koreksi stok list (admin) =====================
 
-  Future<ApiPage<StockAdjustment>> koreksiStok({int page = 1, int perPage = 15}) async {
+  Future<ApiPage<StockAdjustment>> koreksiStok({
+    String dateFrom = '',
+    String dateTo = '',
+    int page = 1,
+    int perPage = 15,
+  }) async {
     final body = await ApiClient.get(
       '$basePath/koreksi-stok',
-      query: {'page': '$page', 'per_page': '$perPage'},
+      query: {
+        'date_from': dateFrom,
+        'date_to': dateTo,
+        'page': '$page',
+        'per_page': '$perPage',
+      },
     );
     return ApiPage.parse<StockAdjustment>(body, StockAdjustment.fromJson);
   }

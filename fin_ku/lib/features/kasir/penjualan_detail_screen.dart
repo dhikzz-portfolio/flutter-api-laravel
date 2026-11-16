@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../core/models/transaction_model.dart';
 import '../../core/utils/format.dart';
+import '../../core/utils/receipt_printer.dart';
 import '../../core/widgets/common.dart';
 import '../transaksi/data/transaksi_repository.dart';
 
@@ -77,7 +78,18 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Penjualan')),
+      appBar: AppBar(
+        title: const Text('Detail Penjualan'),
+        actions: [
+          IconButton(
+            tooltip: 'Cetak Nota',
+            icon: const Icon(Icons.print_outlined),
+            onPressed: _sale == null
+                ? null
+                : () => ReceiptPrinter.printReceipt(_sale!),
+          ),
+        ],
+      ),
       backgroundColor: FinKuColors.bg,
       body: _loading
           ? const LoadingView()

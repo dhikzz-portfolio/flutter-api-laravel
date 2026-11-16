@@ -28,8 +28,16 @@ class _PembelianScreenState extends State<PembelianScreen> {
   String _error = '';
   String _search = '';
   String _statusFilter = '';
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   bool get _canLoadMore => _page < _lastPage && !_loadingMore;
+
+  String get _dateFromParam =>
+      _dateFrom == null ? '' : _dateFrom!.toIso8601String().substring(0, 10);
+
+  String get _dateToParam =>
+      _dateTo == null ? '' : _dateTo!.toIso8601String().substring(0, 10);
 
   @override
   void initState() {
@@ -56,7 +64,12 @@ class _PembelianScreenState extends State<PembelianScreen> {
       _error = '';
     });
     try {
-      final page = await _repo.pembelian(search: _search, status: _statusFilter);
+      final page = await _repo.pembelian(
+        search: _search,
+        status: _statusFilter,
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
+      );
       if (!mounted) return;
       setState(() {
         _items = page.items;
@@ -77,11 +90,15 @@ class _PembelianScreenState extends State<PembelianScreen> {
       final next = await _repo.pembelian(
         search: _search,
         status: _statusFilter,
+        dateFrom: _dateFromParam,
+        dateTo: _dateToParam,
         page: _page + 1,
       );
       if (!mounted) return;
       setState(() {
-        _items.addAll(next.items.where((n) => _items.every((e) => e.id != n.id)));
+        _items.addAll(
+          next.items.where((n) => _items.every((e) => e.id != n.id)),
+        );
         _page = next.currentPage;
         _lastPage = next.lastPage;
       });
@@ -99,17 +116,16 @@ class _PembelianScreenState extends State<PembelianScreen> {
   }
 
   Future<void> _openDetail(Purchase p) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    await showAppPopup<void>(
+      context,
+      builder: (_) => _PembelianDetail(
+        purchase: p,
+        repo: _repo,
+        onChanged: () {
+          Navigator.pop(context);
+          _load();
+        },
       ),
-      builder: (_) => _PembelianDetail(purchase: p, repo: _repo, onChanged: () {
-        Navigator.pop(context);
-        _load();
-      }),
     );
   }
 
@@ -154,128 +170,143 @@ class _PembelianScreenState extends State<PembelianScreen> {
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(12),
-            child: SearchField(
-              hint: 'Cari invoice / distributor...',
-              onSubmitted: (v) {
-                _search = v;
-                _load();
-              },
+            child: Column(
+              children: [
+                SearchField(
+                  hint: 'Cari invoice / distributor...',
+                  onSubmitted: (v) {
+                    _search = v;
+                    _load();
+                  },
+                ),
+                const SizedBox(height: 8),
+                DateRangeFilterBar(
+                  from: _dateFrom,
+                  to: _dateTo,
+                  onChanged: (from, to) {
+                    setState(() {
+                      _dateFrom = from;
+                      _dateTo = to;
+                    });
+                    _load();
+                  },
+                ),
+              ],
             ),
           ),
           Expanded(
             child: _loading
                 ? const LoadingView()
                 : _error.isNotEmpty
-                    ? ErrorView(message: _error, onRetry: _load)
-                    : _items.isEmpty
-                        ? const EmptyView(
-                            icon: Icons.shopping_cart_outlined,
-                            title: 'Belum ada pembelian',
-                            subtitle: 'Tekan "Pembelian Baru" untuk mencatat pembelian.',
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _load,
-                            child: ListView.builder(
-                              controller: _scroll,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _items.length + (_canLoadMore ? 1 : 0),
-                              itemBuilder: (context, i) {
-                                if (i >= _items.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 14),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child:
-                                            CircularProgressIndicator(strokeWidth: 2.2),
-                                      ),
-                                    ),
-                                  );
-                                }
-                                final p = _items[i];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border:
-                                        Border.all(color: FinKuColors.cardBorder),
-                                  ),
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: () => _openDetail(p),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(14),
-                                      child: Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        p.invoice,
-                                                        maxLines: 1,
-                                                        overflow:
-                                                            TextOverflow.ellipsis,
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          fontSize: 13.5,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    if (p.isCancelled)
-                                                      const StatusChip(
-                                                        label: 'DIBATALKAN',
-                                                        color: Color(0xFFDC2626),
-                                                      )
-                                                    else
-                                                      const StatusChip(
-                                                        label: 'AKTIF',
-                                                        color: Color(0xFF15803D),
-                                                      ),
-                                                  ],
+                ? ErrorView(message: _error, onRetry: _load)
+                : _items.isEmpty
+                ? const EmptyView(
+                    icon: Icons.shopping_cart_outlined,
+                    title: 'Belum ada pembelian',
+                    subtitle:
+                        'Tekan "Pembelian Baru" untuk mencatat pembelian.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _items.length + (_canLoadMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i >= _items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        final p = _items[i];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: FinKuColors.cardBorder),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _openDetail(p),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                p.invoice,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13.5,
                                                 ),
-                                                const SizedBox(height: 3),
-                                                Text(
-                                                  p.distributorNama,
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    color: Color(0xFF374151),
-                                                  ),
-                                                ),
-                                                Text(
-                                                  Fmt.tanggal(p.tanggal),
-                                                  style: const TextStyle(
-                                                    fontSize: 11.5,
-                                                    color: Color(0xFF9CA3AF),
-                                                  ),
-                                                ),
-                                              ],
+                                              ),
                                             ),
+                                            if (p.isCancelled)
+                                              const StatusChip(
+                                                label: 'DIBATALKAN',
+                                                color: Color(0xFFDC2626),
+                                              )
+                                            else
+                                              const StatusChip(
+                                                label: 'AKTIF',
+                                                color: Color(0xFF15803D),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          p.distributorNama,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF374151),
                                           ),
-                                          Text(
-                                            Fmt.rupiah(p.total),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 13.5,
-                                              color: Color(0xFF4F46E5),
-                                            ),
+                                        ),
+                                        Text(
+                                          Fmt.tanggal(p.tanggal),
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            color: Color(0xFF9CA3AF),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                );
-                              },
+                                  Text(
+                                    Fmt.rupiah(p.total),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                      color: Color(0xFF4F46E5),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -284,7 +315,11 @@ class _PembelianScreenState extends State<PembelianScreen> {
 }
 
 class _PembelianDetail extends StatelessWidget {
-  const _PembelianDetail({required this.purchase, required this.repo, required this.onChanged});
+  const _PembelianDetail({
+    required this.purchase,
+    required this.repo,
+    required this.onChanged,
+  });
 
   final Purchase purchase;
   final PembelianRepository repo;
@@ -292,119 +327,128 @@ class _PembelianDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Detail Pembelian',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                  ),
-                ),
-                if (purchase.isCancelled)
-                  const StatusChip(label: 'DIBATALKAN', color: Color(0xFFDC2626))
-                else
-                  const StatusChip(label: 'AKTIF', color: Color(0xFF15803D)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _row('Invoice', purchase.invoice),
-            _row('Distributor', purchase.distributorNama),
-            _row('Tanggal', Fmt.tanggalPanjang(purchase.tanggal)),
-            _row('Admin', purchase.userNama),
-            const SizedBox(height: 14),
-            ...purchase.details.map(
-              (d) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            d.namaProduk,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                          Text(
-                            '${d.jumlah} x ${Fmt.rupiah(d.hargaBeli)}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      Fmt.rupiah(d.subtotal),
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
-                    ),
-                  ],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Detail Pembelian',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                 ),
               ),
-            ),
-            const Divider(),
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('Total', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-                Text(
-                  Fmt.rupiah(purchase.total),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF4F46E5),
+              if (purchase.isCancelled)
+                const StatusChip(label: 'DIBATALKAN', color: Color(0xFFDC2626))
+              else
+                const StatusChip(label: 'AKTIF', color: Color(0xFF15803D)),
+              IconButton(
+                tooltip: 'Tutup',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _row('Invoice', purchase.invoice),
+          _row('Distributor', purchase.distributorNama),
+          _row('Tanggal', Fmt.tanggalPanjang(purchase.tanggal)),
+          _row('Admin', purchase.userNama),
+          const SizedBox(height: 14),
+          ...purchase.details.map(
+            (d) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          d.namaProduk,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                        Text(
+                          '${d.jumlah} x ${Fmt.rupiah(d.hargaBeli)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  Text(
+                    Fmt.rupiah(d.subtotal),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 18),
-            if (purchase.isActive) ...[
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-                  onPressed: () async {
-                    final ok = await showConfirmDialog(
-                      context,
-                      title: 'Batalkan Pembelian?',
-                      message:
-                          'Stok dan HPP akan disesuaikan oleh server bila aman untuk invoice ${purchase.invoice}.',
-                      confirmLabel: 'Ya, Batalkan',
-                      destructive: true,
-                    );
-                    if (!ok || !context.mounted) return;
-                    try {
-                      await repo.batalPembelian(purchase.id);
-                      if (!context.mounted) return;
-                      showInfoSnack(context, 'Pembelian berhasil dibatalkan.');
-                      onChanged();
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      showErrorSnack(context, errorText(e));
-                    }
-                  },
-                  child: const Text('Batalkan Pembelian'),
+          ),
+          const Divider(),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Total',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Text(
+                Fmt.rupiah(purchase.total),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF4F46E5),
                 ),
               ),
             ],
-            const SizedBox(height: 6),
+          ),
+          const SizedBox(height: 18),
+          if (purchase.isActive) ...[
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                ),
+                onPressed: () async {
+                  final ok = await showConfirmDialog(
+                    context,
+                    title: 'Batalkan Pembelian?',
+                    message:
+                        'Stok dan HPP akan disesuaikan oleh server bila aman untuk invoice ${purchase.invoice}.',
+                    confirmLabel: 'Ya, Batalkan',
+                    destructive: true,
+                  );
+                  if (!ok || !context.mounted) return;
+                  try {
+                    await repo.batalPembelian(purchase.id);
+                    if (!context.mounted) return;
+                    showInfoSnack(context, 'Pembelian berhasil dibatalkan.');
+                    onChanged();
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    showErrorSnack(context, errorText(e));
+                  }
+                },
+                child: const Text('Batalkan Pembelian'),
+              ),
+            ),
           ],
-        ),
+          const SizedBox(height: 6),
+        ],
       ),
     );
   }
@@ -417,13 +461,19 @@ class _PembelianDetail extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+            child: Text(
+              label,
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+            ),
           ),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 13.5,
+              ),
             ),
           ),
         ],
@@ -504,20 +554,24 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
   double get _total {
     var sum = 0.0;
     for (final item in _cart) {
-      sum += double.parse(item.hargaBeliController.text) * int.parse(item.jumlahController.text);
+      sum +=
+          double.parse(item.hargaBeliController.text) *
+          int.parse(item.jumlahController.text);
     }
     return sum;
   }
 
   void _addToCart(Product p) {
     setState(() {
-      _cart.add(_PurchaseCartItem(
-        product: p,
-        hargaBeliController: TextEditingController(
-          text: p.hppRataRata > 0 ? p.hppRataRata.toStringAsFixed(0) : '',
+      _cart.add(
+        _PurchaseCartItem(
+          product: p,
+          hargaBeliController: TextEditingController(
+            text: p.hppRataRata > 0 ? p.hppRataRata.toStringAsFixed(0) : '',
+          ),
+          jumlahController: TextEditingController(text: '1'),
         ),
-        jumlahController: TextEditingController(text: '1'),
-      ));
+      );
     });
   }
 
@@ -544,7 +598,8 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
       final hpp = double.tryParse(c.hargaBeliController.text) ?? 0;
       if (jml < 1 || hpp <= 0) {
         setState(
-          () => _error = 'Jumlah dan harga beli harus lebih dari 0 untuk ${c.product.nama}.',
+          () => _error =
+              'Jumlah dan harga beli harus lebih dari 0 untuk ${c.product.nama}.',
         );
         return;
       }
@@ -569,7 +624,10 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
             .toList(),
       );
       if (!mounted) return;
-      showInfoSnack(context, 'Pembelian berhasil disimpan. Stok & HPP diperbarui.');
+      showInfoSnack(
+        context,
+        'Pembelian berhasil disimpan. Stok & HPP diperbarui.',
+      );
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
@@ -608,9 +666,22 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
-                        child: SizedBox(
-                          height: 14,
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Memuat distributor...',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : DropdownButtonFormField<int>(
@@ -632,7 +703,10 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
                   children: [
                     const Text(
                       'Total Pembelian',
-                      style: TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                     const Spacer(),
                     Text(
@@ -649,44 +723,59 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
             ),
           ),
           const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: TextField(
-              decoration: InputDecorationX.search(hint: 'Cari produk aktif...'),
-              onChanged: (v) => _productSearch = v.trim(),
-              onSubmitted: (_) => _loadProducts(),
-            ),
-          ),
+          // Area tengah dapat di-scroll agar tidak overflow saat keyboard
+          // terbuka di layar pendek.
           Expanded(
-            flex: 2,
-            child: _loadingProducts
-                ? const LoadingView()
-                : _products.isEmpty
-                    ? const EmptyView(icon: Icons.search_off, title: 'Produk tidak ditemukan')
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _products.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 6),
-                        itemBuilder: (context, i) {
-                          final p = _products[i];
-                          final inCart = _cart.any((c) => c.product.id == p.id);
-                          return _ProductPickerRow(
-                            product: p,
-                            inCart: inCart,
-                            onAdd: () => _addToCart(p),
-                          );
-                        },
-                      ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: _cart.isEmpty
-                ? const EmptyView(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                  child: TextField(
+                    decoration: InputDecorationX.search(
+                      hint: 'Cari produk aktif...',
+                    ),
+                    onChanged: (v) => _productSearch = v.trim(),
+                    onSubmitted: (_) => _loadProducts(),
+                  ),
+                ),
+                SizedBox(
+                  height: 220,
+                  child: _loadingProducts
+                      ? const LoadingView()
+                      : _products.isEmpty
+                      ? const EmptyView(
+                          icon: Icons.search_off,
+                          title: 'Produk tidak ditemukan',
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _products.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 6),
+                          itemBuilder: (context, i) {
+                            final p = _products[i];
+                            final inCart = _cart.any(
+                              (c) => c.product.id == p.id,
+                            );
+                            return _ProductPickerRow(
+                              product: p,
+                              inCart: inCart,
+                              onAdd: () => _addToCart(p),
+                            );
+                          },
+                        ),
+                ),
+                const Divider(height: 1),
+                if (_cart.isEmpty)
+                  const EmptyView(
                     icon: Icons.list_alt,
                     title: 'Belum ada item',
                     subtitle: 'Pilih produk beserta harga beli & jumlah.',
                   )
-                : ListView.builder(
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     itemCount: _cart.length,
                     itemBuilder: (context, i) {
@@ -752,6 +841,8 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
                       );
                     },
                   ),
+              ],
+            ),
           ),
           if (_error.isNotEmpty)
             Container(
@@ -764,7 +855,10 @@ class _PembelianFormScreenState extends State<PembelianFormScreen> {
               ),
               child: Text(
                 _error,
-                style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 12.5),
+                style: const TextStyle(
+                  color: Color(0xFFB91C1C),
+                  fontSize: 12.5,
+                ),
               ),
             ),
           SafeArea(
@@ -837,11 +931,17 @@ class _ProductPickerRow extends StatelessWidget {
               children: [
                 Text(
                   product.nama,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 Text(
                   '${product.categoryName} · stok ${product.stok} · HPP ${Fmt.rupiah(product.hppRataRata)}',
-                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),

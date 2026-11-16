@@ -58,6 +58,7 @@ class SaleDetail {
     required this.hargaJual,
     required this.jumlah,
     required this.subtotal,
+    this.hppTotal = 0,
   });
 
   final int id;
@@ -66,6 +67,7 @@ class SaleDetail {
   final double hargaJual;
   final int jumlah;
   final double subtotal;
+  final double hppTotal;
 
   static SaleDetail fromJson(Map<String, dynamic> json) {
     final p = json['product'];
@@ -76,6 +78,7 @@ class SaleDetail {
       hargaJual: Fmt.dec(json['harga_jual']),
       jumlah: Fmt.intv(json['jumlah']),
       subtotal: Fmt.dec(json['subtotal']),
+      hppTotal: Fmt.dec(json['hpp_total']),
     );
   }
 }
@@ -111,6 +114,12 @@ class Sale {
 
   bool get isActive => status == 'active';
   bool get isCancelled => status == 'dibatalkan';
+
+  /// HPP transaksi, dijumlahkan dari detail penjualan (sama dengan web).
+  double get totalHpp => details.fold<double>(0, (sum, d) => sum + d.hppTotal);
+
+  /// Laba kotor transaksi.
+  double get laba => total - totalHpp;
 
   static Sale fromJson(Map<String, dynamic> json) {
     final buyer = json['buyer'];

@@ -8,7 +8,11 @@ import '../katalog/data/katalog_repository.dart';
 /// Daftar kategori dengan form tambah/ubah (modal sheet).
 /// Owner memakai layar ini dengan [readOnly] karena endpoint-nya baca saja.
 class KategoriScreen extends StatefulWidget {
-  const KategoriScreen({super.key, this.readOnly = false, this.isEmbedded = false});
+  const KategoriScreen({
+    super.key,
+    this.readOnly = false,
+    this.isEmbedded = false,
+  });
 
   final bool readOnly;
   final bool isEmbedded;
@@ -18,8 +22,9 @@ class KategoriScreen extends StatefulWidget {
 }
 
 class _KategoriScreenState extends State<KategoriScreen> {
-  late final KatalogRepository _repo =
-      KatalogRepository(basePath: widget.readOnly ? '/api/v1/owner' : '/api/v1/admin');
+  late final KatalogRepository _repo = KatalogRepository(
+    basePath: widget.readOnly ? '/api/v1/owner' : '/api/v1/admin',
+  );
   final _scroll = ScrollController();
 
   List<Category> _items = [];
@@ -88,7 +93,9 @@ class _KategoriScreenState extends State<KategoriScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _items.addAll(next.items.where((n) => _items.every((e) => e.id != n.id)));
+        _items.addAll(
+          next.items.where((n) => _items.every((e) => e.id != n.id)),
+        );
         _page = next.currentPage;
         _lastPage = next.lastPage;
       });
@@ -102,12 +109,9 @@ class _KategoriScreenState extends State<KategoriScreen> {
 
   Future<void> _openForm([Category? category]) async {
     if (widget.readOnly) return;
-    final saved = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
+    final saved = await showAppPopup<bool>(
+      context,
+      maxWidth: 440,
       builder: (_) => _KategoriForm(repo: _repo, category: category),
     );
     if (saved == true) _load();
@@ -117,7 +121,7 @@ class _KategoriScreenState extends State<KategoriScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.readOnly ? 'Kategori (Data Toko)' : 'Kategori'),
+        title: Text(widget.readOnly ? 'Kategori (Lihat Saja)' : 'Kategori'),
         leading: widget.isEmbedded
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
@@ -157,14 +161,21 @@ class _KategoriScreenState extends State<KategoriScreen> {
                   child: DropdownButtonFormField<String>(
                     initialValue: _statusFilter,
                     isDense: true,
+                    isExpanded: true,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 10,
+                      ),
                     ),
                     items: const [
                       DropdownMenuItem(value: '', child: Text('Semua')),
                       DropdownMenuItem(value: 'aktif', child: Text('Aktif')),
-                      DropdownMenuItem(value: 'nonaktif', child: Text('Nonaktif')),
+                      DropdownMenuItem(
+                        value: 'nonaktif',
+                        child: Text('Nonaktif'),
+                      ),
                     ],
                     onChanged: (v) {
                       _statusFilter = v ?? '';
@@ -179,88 +190,92 @@ class _KategoriScreenState extends State<KategoriScreen> {
             child: _loading
                 ? const LoadingView()
                 : _error.isNotEmpty
-                    ? ErrorView(message: _error, onRetry: _load)
-                    : _items.isEmpty
-                        ? const EmptyView(
-                            icon: Icons.category_outlined,
-                            title: 'Belum ada kategori',
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _load,
-                            child: ListView.builder(
-                              controller: _scroll,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _items.length + (_canLoadMore ? 1 : 0),
-                              itemBuilder: (context, i) {
-                                if (i >= _items.length) {
-                                  return const Padding(
-                                    padding: EdgeInsets.symmetric(vertical: 14),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2.2),
+                ? ErrorView(message: _error, onRetry: _load)
+                : _items.isEmpty
+                ? const EmptyView(
+                    icon: Icons.category_outlined,
+                    title: 'Belum ada kategori',
+                  )
+                : RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _items.length + (_canLoadMore ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i >= _items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        final c = _items[i];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: FinKuColors.cardBorder),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      c.nama,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13.5,
                                       ),
                                     ),
-                                  );
-                                }
-                                final c = _items[i];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: FinKuColors.cardBorder),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              c.nama,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13.5,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                StatusChip(
-                                                  label: c.isActive ? 'AKTIF' : 'NONAKTIF',
-                                                  color: c.isActive
-                                                      ? FinKuColors.success
-                                                      : FinKuColors.textSecondary,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '${c.productsCount} produk',
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: FinKuColors.textSecondary,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        StatusChip(
+                                          label: c.isActive
+                                              ? 'AKTIF'
+                                              : 'NONAKTIF',
+                                          color: c.isActive
+                                              ? FinKuColors.success
+                                              : FinKuColors.textSecondary,
                                         ),
-                                      ),
-                                      if (!widget.readOnly)
-                                        IconicAction(
-                                          icon: Icons.edit_outlined,
-                                          label: 'Edit',
-                                          onTap: () => _openForm(c),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${c.productsCount} produk',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: FinKuColors.textSecondary,
+                                          ),
                                         ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (!widget.readOnly)
+                                IconicAction(
+                                  icon: Icons.edit_outlined,
+                                  label: 'Edit',
+                                  onTap: () => _openForm(c),
+                                ),
+                            ],
                           ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -338,77 +353,89 @@ class _KategoriFormState extends State<_KategoriForm> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.category != null;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              isEdit ? 'Edit Kategori' : 'Kategori Baru',
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  isEdit ? 'Edit Kategori' : 'Kategori Baru',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                tooltip: 'Tutup',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => Navigator.pop(context, false),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _nama,
+            decoration: const InputDecoration(
+              labelText: 'Nama Kategori',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _nama,
+          ),
+          if (isEdit) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _status,
               decoration: const InputDecoration(
-                labelText: 'Nama Kategori',
+                labelText: 'Status',
                 border: OutlineInputBorder(),
               ),
-            ),
-            if (isEdit) ...[
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _status,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'aktif', child: Text('Aktif')),
-                  DropdownMenuItem(value: 'nonaktif', child: Text('Nonaktif')),
-                ],
-                onChanged: (v) => setState(() => _status = v ?? 'aktif'),
-              ),
-            ],
-            if (_error.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text(
-                _error,
-                style: const TextStyle(color: FinKuColors.danger, fontSize: 12.5),
-              ),
-            ],
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Batal'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _saving ? null : _save,
-                    child: _saving
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text('Simpan'),
-                  ),
-                ),
+              items: const [
+                DropdownMenuItem(value: 'aktif', child: Text('Aktif')),
+                DropdownMenuItem(value: 'nonaktif', child: Text('Nonaktif')),
               ],
+              onChanged: (v) => setState(() => _status = v ?? 'aktif'),
             ),
           ],
-        ),
+          if (_error.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              _error,
+              style: const TextStyle(color: FinKuColors.danger, fontSize: 12.5),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Batal'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _saving ? null : _save,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Simpan'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

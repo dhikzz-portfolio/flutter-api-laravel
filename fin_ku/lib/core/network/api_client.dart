@@ -51,7 +51,7 @@ class ApiClient {
     Map<String, String>? query,
   }) async {
     final res = await _send(() => _client.get(uri(path, query), headers: _defaultHeaders));
-    return res.body;
+    return res;
   }
 
   static Future<dynamic> post(String path, dynamic body) async {
@@ -62,7 +62,7 @@ class ApiClient {
         body: jsonEncode(body ?? {}),
       ),
     );
-    return res.body;
+    return res;
   }
 
   static Future<dynamic> put(String path, dynamic body) async {
@@ -73,12 +73,12 @@ class ApiClient {
         body: jsonEncode(body ?? {}),
       ),
     );
-    return res.body;
+    return res;
   }
 
   static Future<dynamic> delete(String path) async {
     final res = await _send(() => _client.delete(uri(path), headers: _defaultHeaders));
-    return res.body;
+    return res;
   }
 
   /// Mengunduh file (mis. laporan excel/pdf) dengan header auth.
@@ -128,7 +128,11 @@ class ApiClient {
       final errors = <String, List<String>>{};
       if (body is Map && body['errors'] is Map) {
         (body['errors'] as Map).forEach((k, v) {
-          errors[k.toString()] = (v as List).map((e) => e.toString()).toList();
+          if (v is List) {
+            errors[k.toString()] = v.map((e) => e.toString()).toList();
+          } else if (v != null) {
+            errors[k.toString()] = [v.toString()];
+          }
         });
       }
       throw ApiException(

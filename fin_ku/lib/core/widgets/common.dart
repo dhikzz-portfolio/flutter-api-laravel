@@ -32,11 +32,7 @@ class FinKuCard extends StatelessWidget {
 
 /// Status baris list: label chip berwarna.
 class StatusChip extends StatelessWidget {
-  const StatusChip({
-    required this.label,
-    required this.color,
-    super.key,
-  });
+  const StatusChip({required this.label, required this.color, super.key});
 
   final String label;
   final Color color;
@@ -68,8 +64,10 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Scroll view mencegah overflow saat area yang tersedia pendek, misalnya
+    // di dalam panel kecil atau ketika keyboard terbuka.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -101,14 +99,18 @@ class EmptyView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 44, color: const Color(0xFFD1D5DB)),
             const SizedBox(height: 12),
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
@@ -125,11 +127,7 @@ class EmptyView extends StatelessWidget {
 }
 
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    required this.message,
-    required this.onRetry,
-    super.key,
-  });
+  const ErrorView({required this.message, required this.onRetry, super.key});
 
   final String message;
   final VoidCallback onRetry;
@@ -137,7 +135,7 @@ class ErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -221,13 +219,73 @@ class StatCard extends StatelessWidget {
   }
 }
 
-/// Bidang pencarian dengan debounce sederhana via submit.
-class SearchField extends StatefulWidget {
-  const SearchField({
-    required this.hint,
-    required this.onSubmitted,
+/// Bar filter rentang tanggal, dipakai halaman admin/owner yang di web
+/// memakai input date_from & date_to.
+class DateRangeFilterBar extends StatelessWidget {
+  const DateRangeFilterBar({
+    required this.from,
+    required this.to,
+    required this.onChanged,
     super.key,
   });
+
+  final DateTime? from;
+  final DateTime? to;
+  final void Function(DateTime? from, DateTime? to) onChanged;
+
+  Future<void> _pick(BuildContext context, bool isFrom) async {
+    final now = DateTime.now();
+    final initial = (isFrom ? from : to) ?? now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      helpText: isFrom ? 'Tanggal mulai' : 'Tanggal akhir',
+    );
+    if (picked == null) return;
+
+    if (isFrom) {
+      final end = (to != null && to!.isBefore(picked)) ? picked : to;
+      onChanged(picked, end);
+    } else {
+      final start = (from != null && from!.isAfter(picked)) ? picked : from;
+      onChanged(start, picked);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFilter = from != null || to != null;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _pick(context, true),
+          icon: const Icon(Icons.calendar_today, size: 15),
+          label: Text(from == null ? 'Dari tanggal' : Fmt.tanggal(from)),
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _pick(context, false),
+          icon: const Icon(Icons.calendar_today, size: 15),
+          label: Text(to == null ? 'Sampai tanggal' : Fmt.tanggal(to)),
+        ),
+        if (hasFilter)
+          IconButton(
+            tooltip: 'Hapus filter tanggal',
+            icon: const Icon(Icons.clear, size: 18),
+            onPressed: () => onChanged(null, null),
+          ),
+      ],
+    );
+  }
+}
+
+/// Bidang pencarian dengan debounce sederhana via submit.
+class SearchField extends StatefulWidget {
+  const SearchField({required this.hint, required this.onSubmitted, super.key});
 
   final String hint;
   final ValueChanged<String> onSubmitted;
@@ -238,11 +296,19 @@ class SearchField extends StatefulWidget {
 
 class _SearchFieldState extends State<SearchField> {
   late final TextEditingController _controller;
+  bool _hasText = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    _controller.addListener(_syncClearButton);
+  }
+
+  /// Tombol hapus hanya perlu dibangun ulang saat isi berubah kosong/terisi.
+  void _syncClearButton() {
+    final hasText = _controller.text.isNotEmpty;
+    if (hasText != _hasText) setState(() => _hasText = hasText);
   }
 
   @override
@@ -258,7 +324,7 @@ class _SearchFieldState extends State<SearchField> {
       textInputAction: TextInputAction.search,
       onSubmitted: (v) => widget.onSubmitted(v.trim()),
       decoration: InputDecorationX.search(hint: widget.hint).copyWith(
-        suffixIcon: _controller.text.isEmpty
+        suffixIcon: !_hasText
             ? null
             : IconButton(
                 icon: const Icon(Icons.clear, size: 18),
@@ -286,11 +352,15 @@ Future<bool> showConfirmDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Batal'),
+        ),
         FilledButton(
           style: FilledButton.styleFrom(
-            backgroundColor:
-                destructive ? const Color(0xFFDC2626) : const Color(0xFF4F46E5),
+            backgroundColor: destructive
+                ? const Color(0xFFDC2626)
+                : const Color(0xFF4F46E5),
           ),
           onPressed: () => Navigator.pop(ctx, true),
           child: Text(confirmLabel),
@@ -301,20 +371,47 @@ Future<bool> showConfirmDialog(
   return result == true;
 }
 
+/// Popup detail terpusat yang konsisten di seluruh aplikasi.
+Future<T?> showAppPopup<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  double maxWidth = 560,
+}) {
+  return showDialog<T>(
+    context: context,
+    builder: (ctx) => Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxWidth,
+          maxHeight: MediaQuery.sizeOf(ctx).height * 0.82,
+        ),
+        child: builder(ctx),
+      ),
+    ),
+  );
+}
+
 void showInfoSnack(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..clearSnackBars()
-    ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+    ..showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
 }
 
 void showErrorSnack(BuildContext context, String message) {
   ScaffoldMessenger.of(context)
     ..clearSnackBars()
-    ..showSnackBar(SnackBar(
-      content: Text(message),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFFDC2626),
-    ));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFFDC2626),
+      ),
+    );
 }
 
 String errorText(Object error) {
@@ -355,12 +452,14 @@ class IconicAction extends StatelessWidget {
             children: [
               Icon(icon, size: 15, color: c),
               const SizedBox(width: 5),
-              Text(label,
-                  style: TextStyle(
-                    color: c,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                label,
+                style: TextStyle(
+                  color: c,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),

@@ -93,7 +93,14 @@ class _PosFormScreenState extends State<PosFormScreen> {
       setState(() => _error = 'Stok habis untuk produk ${p.nama}');
       return;
     }
-    setState(() => _cart.add(_CartItem(product: p, controller: TextEditingController(text: '1'))));
+    setState(
+      () => _cart.add(
+        _CartItem(
+          product: p,
+          controller: TextEditingController(text: '1'),
+        ),
+      ),
+    );
   }
 
   void _bumpJumlah(int index, int delta) {
@@ -101,7 +108,13 @@ class _PosFormScreenState extends State<PosFormScreen> {
     final stok = item.product.stok;
     final next = (item.jumlah + delta).clamp(0, stok);
     item.controller.text = '$next';
-    setState(() => _cart[index] = _CartItem(product: item.product, controller: item.controller, jumlah: next));
+    setState(
+      () => _cart[index] = _CartItem(
+        product: item.product,
+        controller: item.controller,
+        jumlah: next,
+      ),
+    );
   }
 
   void _setJumlah(int index, String raw) {
@@ -110,7 +123,13 @@ class _PosFormScreenState extends State<PosFormScreen> {
     final stok = item.product.stok;
     final clamped = parsed.clamp(0, stok);
     if ('$clamped' != raw) item.controller.text = '$clamped';
-    setState(() => _cart[index] = _CartItem(product: item.product, controller: item.controller, jumlah: clamped));
+    setState(
+      () => _cart[index] = _CartItem(
+        product: item.product,
+        controller: item.controller,
+        jumlah: clamped,
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -132,11 +151,13 @@ class _PosFormScreenState extends State<PosFormScreen> {
       await _pembeliRepo.createPenjualan(
         buyerId: _buyerId!,
         items: _cart
-            .map((c) => CartProduct(
-                  productId: c.product.id,
-                  nama: c.product.nama,
-                  jumlah: c.jumlah,
-                ))
+            .map(
+              (c) => CartProduct(
+                productId: c.product.id,
+                nama: c.product.nama,
+                jumlah: c.jumlah,
+              ),
+            )
             .toList(),
       );
       if (!mounted) return;
@@ -186,10 +207,22 @@ class _PosFormScreenState extends State<PosFormScreen> {
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
-                        child: SizedBox(
-                          height: 14,
-                          width: 14,
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Memuat pembeli...',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : DropdownButtonFormField<int>(
@@ -213,7 +246,10 @@ class _PosFormScreenState extends State<PosFormScreen> {
                     Expanded(
                       child: Text(
                         Fmt.tanggalPanjang(DateTime.now()),
-                        style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF6B7280),
+                        ),
                       ),
                     ),
                     Text(
@@ -230,63 +266,79 @@ class _PosFormScreenState extends State<PosFormScreen> {
             ),
           ),
           const Divider(height: 1),
-          // ================== Pencarian & daftar produk ==================
-          SizedBox(
-            height: 236,
-            child: Column(
+          // Area tengah dapat di-scroll agar tidak overflow saat keyboard
+          // terbuka di layar pendek.
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                  child: TextField(
-                    decoration: InputDecorationX.search(
-                      hint: 'Cari produk aktif (stok tersedia)...',
-                    ),
-                    onChanged: (v) {
-                      _productSearch = v.trim();
-                    },
-                    onSubmitted: (_) => _loadProducts(),
+                // ================ Pencarian & daftar produk ================
+                SizedBox(
+                  height: 236,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                        child: TextField(
+                          decoration: InputDecorationX.search(
+                            hint: 'Cari produk aktif (stok tersedia)...',
+                          ),
+                          onChanged: (v) {
+                            _productSearch = v.trim();
+                          },
+                          onSubmitted: (_) => _loadProducts(),
+                        ),
+                      ),
+                      Expanded(
+                        child: _loadingProducts
+                            ? const LoadingView()
+                            : _searchError.isNotEmpty
+                            ? ErrorView(
+                                message: _searchError,
+                                onRetry: _loadProducts,
+                              )
+                            : _products.isEmpty
+                            ? const EmptyView(
+                                icon: Icons.search_off,
+                                title: 'Produk tidak ditemukan',
+                                subtitle: 'Coba kata kunci lain.',
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+                                itemCount: _products.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(height: 6),
+                                itemBuilder: (context, i) {
+                                  final p = _products[i];
+                                  final inCart = _cart.any(
+                                    (c) => c.product.id == p.id,
+                                  );
+                                  return _ProductRow(
+                                    product: p,
+                                    inCart: inCart,
+                                    onAdd: () => _addToCart(p),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: _loadingProducts
-                      ? const LoadingView()
-                      : _searchError.isNotEmpty
-                          ? ErrorView(message: _searchError, onRetry: _loadProducts)
-                          : _products.isEmpty
-                              ? const EmptyView(
-                                  icon: Icons.search_off,
-                                  title: 'Produk tidak ditemukan',
-                                  subtitle: 'Coba kata kunci lain.',
-                                )
-                              : ListView.separated(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                  itemCount: _products.length,
-                                  separatorBuilder: (_, _) => const SizedBox(height: 6),
-                                  itemBuilder: (context, i) {
-                                    final p = _products[i];
-                                    final inCart =
-                                        _cart.any((c) => c.product.id == p.id);
-                                    return _ProductRow(
-                                      product: p,
-                                      inCart: inCart,
-                                      onAdd: () => _addToCart(p),
-                                    );
-                                  },
-                                ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // ================== Keranjang ==================
-          Expanded(
-            child: _cart.isEmpty
-                ? const EmptyView(
+                const Divider(height: 1),
+                // ================== Keranjang ==================
+                if (_cart.isEmpty)
+                  const EmptyView(
                     icon: Icons.shopping_cart_outlined,
                     title: 'Keranjang kosong',
                     subtitle: 'Sentuh produk di atas untuk menambahkannya.',
                   )
-                : ListView.builder(
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(16),
                     itemCount: _cart.length,
                     itemBuilder: (context, i) {
@@ -378,21 +430,26 @@ class _PosFormScreenState extends State<PosFormScreen> {
                       );
                     },
                   ),
-          ),
-          // ================== Error + submit ==================
-          if (_error.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                _error,
-                style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 12.5),
-              ),
+                // ================== Error ==================
+                if (_error.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _error,
+                      style: const TextStyle(
+                        color: Color(0xFFB91C1C),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
           SafeArea(
             top: false,
             child: Padding(
@@ -482,12 +539,18 @@ class _ProductRow extends StatelessWidget {
               children: [
                 Text(
                   product.nama,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${product.categoryNama} · stok ${product.stok} · ${Fmt.rupiah(product.hargaJual)}',
-                  style: const TextStyle(fontSize: 11.5, color: Color(0xFF6B7280)),
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),

@@ -7,7 +7,15 @@ import '../../core/widgets/common.dart';
 import '../transaksi/data/transaksi_repository.dart';
 
 class KasirDashboardScreen extends StatefulWidget {
-  const KasirDashboardScreen({super.key});
+  const KasirDashboardScreen({
+    super.key,
+    this.onOpenPenjualan,
+    this.onOpenPembeli,
+  });
+
+  /// Navigasi aksi cepat, disediakan oleh AppShell.
+  final VoidCallback? onOpenPenjualan;
+  final VoidCallback? onOpenPembeli;
 
   @override
   State<KasirDashboardScreen> createState() => _KasirDashboardScreenState();
@@ -56,21 +64,21 @@ class _KasirDashboardScreenState extends State<KasirDashboardScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       StatCard(
-                        label: 'Transaksi Hari Ini',
+                        label: 'Penjualan Hari Ini',
                         value: Fmt.number(_stats?.penjualanHariIni ?? 0),
                         icon: Icons.receipt,
-                        color: const Color(0xFF4F46E5),
-                      ),
-                      const SizedBox(height: 12),
-                      StatCard(
-                        label: 'Total Omzet Hari Ini',
-                        value: Fmt.rupiah(_stats?.totalTransaksi ?? 0),
-                        icon: Icons.payments_outlined,
                         color: const Color(0xFF15803D),
                       ),
                       const SizedBox(height: 12),
                       StatCard(
-                        label: 'Produk di Bawah Stok Minimum',
+                        label: 'Total Transaksi Hari Ini',
+                        value: Fmt.rupiah(_stats?.totalTransaksi ?? 0),
+                        icon: Icons.payments_outlined,
+                        color: const Color(0xFF4F46E5),
+                      ),
+                      const SizedBox(height: 12),
+                      StatCard(
+                        label: 'Stok Minimum',
                         value: Fmt.number(_stats?.stokMinimum ?? 0),
                         icon: Icons.warning_amber_outlined,
                         color: (_stats?.stokMinimum ?? 0) > 0
@@ -78,24 +86,34 @@ class _KasirDashboardScreenState extends State<KasirDashboardScreen> {
                             : const Color(0xFF6B7280),
                       ),
                       const SizedBox(height: 20),
-                      const FinKuCard(
-                        padding: EdgeInsets.all(16),
-                        child: Row(
+                      FinKuCard(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.touch_app_outlined,
-                              size: 20,
-                              color: Color(0xFF4F46E5),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'Untuk mencatat penjualan, buka tab Penjualan lalu tekan tombol +.',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  color: Color(0xFF374151),
-                                ),
+                            const Text(
+                              'Aksi Cepat',
+                              style: TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w600,
                               ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                FilledButton.icon(
+                                  onPressed: widget.onOpenPenjualan,
+                                  icon: const Icon(Icons.add, size: 18),
+                                  label: const Text('Transaksi Baru'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: widget.onOpenPembeli,
+                                  icon: const Icon(Icons.person_add_alt, size: 18),
+                                  label: const Text('Data Pembeli'),
+                                ),
+                              ],
                             ),
                           ],
                         ),
