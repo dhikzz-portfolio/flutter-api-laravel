@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -25,7 +23,9 @@ class ApiConfig {
   static String get defaultBaseUrl {
     if (_envBaseUrl.isNotEmpty) return _envBaseUrl;
     if (kIsWeb) return 'http://127.0.0.1:$devPort';
-    if (Platform.isAndroid) return 'http://10.0.2.2:$devPort';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:$devPort';
+    }
     return 'http://127.0.0.1:$devPort';
   }
 

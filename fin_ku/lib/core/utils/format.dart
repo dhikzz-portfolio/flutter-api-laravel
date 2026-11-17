@@ -92,6 +92,7 @@ class InputDecorationX {
       errorText: (errorText == null || errorText.isEmpty) ? null : errorText,
       prefixIcon: const Icon(Icons.search),
       isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
   }

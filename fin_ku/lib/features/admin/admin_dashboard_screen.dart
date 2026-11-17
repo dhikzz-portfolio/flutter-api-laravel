@@ -123,65 +123,68 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 720;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Admin')),
+      appBar: AppBar(
+        title: const Text('Dashboard Admin'),
+        actions: [
+          if (wide) const AppBarDate(),
+        ],
+      ),
       backgroundColor: FinKuColors.bg,
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
           children: [
             if (_loading && _stats == null) ...[
               const FinKuCard(
                 child: SizedBox(
                   height: 90,
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2.4)),
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2.4),
+                  ),
                 ),
               ),
             ] else if (_error.isNotEmpty) ...[
               ErrorView(message: _error, onRetry: _load),
               const SizedBox(height: 200),
             ] else if (_stats != null) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: StatCard(
-                      label: 'Pembelian Hari Ini',
-                      value: Fmt.number(_stats!.pembelianHariIni),
-                      icon: Icons.shopping_cart,
-                      color: const Color(0xFF4F46E5),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
-                      label: 'Barang Masuk',
-                      value: Fmt.number(_stats!.barangMasuk),
-                      icon: Icons.move_to_inbox_outlined,
-                      color: const Color(0xFF15803D),
-                    ),
-                  ),
-                ],
+              const SectionHeader(
+                title: 'Ringkasan Hari Ini',
+                subtitle: 'Pembelian dan pergerakan stok terkini',
               ),
               const SizedBox(height: 12),
-              Row(
+              ResponsiveStatGrid(
                 children: [
-                  Expanded(
-                    child: StatCard(
-                      label: 'Barang Keluar',
-                      value: Fmt.number(_stats!.barangKeluar),
-                      icon: Icons.outbound_outlined,
-                      color: const Color(0xFFB45309),
-                    ),
+                  StatCard(
+                    label: 'Pembelian Hari Ini',
+                    value: Fmt.number(_stats!.pembelianHariIni),
+                    hint: 'transaksi',
+                    icon: Icons.shopping_bag_outlined,
+                    color: FinKuColors.info,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: StatCard(
-                      label: 'Stok Minimum',
-                      value: Fmt.number(_stats!.produkStokMinimum.length),
-                      icon: Icons.warning_amber_outlined,
-                      color: const Color(0xFFDC2626),
-                    ),
+                  StatCard(
+                    label: 'Barang Masuk',
+                    value: Fmt.number(_stats!.barangMasuk),
+                    hint: 'unit',
+                    icon: Icons.move_to_inbox_outlined,
+                    color: FinKuColors.success,
+                  ),
+                  StatCard(
+                    label: 'Barang Keluar',
+                    value: Fmt.number(_stats!.barangKeluar),
+                    hint: 'unit',
+                    icon: Icons.outbox_outlined,
+                    color: FinKuColors.warning,
+                  ),
+                  StatCard(
+                    label: 'Stok Minimum',
+                    value: Fmt.number(_stats!.produkStokMinimum.length),
+                    hint: 'produk perlu restok',
+                    icon: Icons.warning_amber_outlined,
+                    color: FinKuColors.danger,
                   ),
                 ],
               ),
@@ -189,50 +192,94 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               _buildTrendCard(),
               const SizedBox(height: 20),
               FinKuCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Produk di Bawah Stok Minimum',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5),
+                    SectionHeader(
+                      title: 'Produk di Bawah Stok Minimum',
+                      subtitle: _stats!.produkStokMinimum.isEmpty
+                          ? 'Semua stok aman di atas batas minimum'
+                          : '${_stats!.produkStokMinimum.length} produk perlu segera direstok',
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     if (_stats!.produkStokMinimum.isEmpty)
-                      Text(
-                        'Semua stok aman di atas minimum.',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          'Tidak ada produk yang menipis. Stok aman.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: FinKuColors.textSecondary,
+                          ),
+                        ),
                       )
                     else
-                      ..._stats!.produkStokMinimum.map(
-                        (p) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
+                      for (final p in _stats!.produkStokMinimum)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: FinKuColors.bg,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: FinKuColors.borderSoft,
+                            ),
+                          ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.sync_problem_outlined,
-                                size: 17,
-                                color: Color(0xFFB45309),
+                              Container(
+                                width: 32,
+                                height: 32,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: FinKuColors.warningSoft,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: const Icon(
+                                  Icons.sync_problem_outlined,
+                                  size: 17,
+                                  color: FinKuColors.warning,
+                                ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
                                   p.nama,
-                                  style: const TextStyle(fontSize: 13.5),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: FinKuColors.textBody,
+                                  ),
                                 ),
                               ),
-                              Text(
-                                '${p.stok} / min ${p.stokMinimum}',
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFFB45309),
-                                  fontWeight: FontWeight.w600,
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: FinKuColors.dangerSoft,
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '${p.stok} / min ${p.stokMinimum}',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: FinKuColors.danger,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
                   ],
                 ),
               ),
@@ -247,15 +294,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildTrendCard() {
     final trend = _trend;
     return FinKuCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Pergerakan Stok 7 Hari Terakhir',
-            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+          const SectionHeader(
+            title: 'Pergerakan Stok 7 Hari Terakhir',
+            subtitle: 'Barang masuk dan keluar per hari',
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (trend == null)
             SizedBox(
               height: 180,

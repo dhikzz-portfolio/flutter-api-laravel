@@ -2,26 +2,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter (Windows)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main.dart",
-      "deviceId": "windows",
-      "preLaunchTask": "laravel:serve"
-    },
-    {
       "name": "Flutter (Chrome)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
       "deviceId": "chrome",
+      "preLaunchTask": "laravel:serve"
+    },
+    {
+      "name": "Flutter (Windows desktop - butuh VS Build Tools)",
+      "request": "launch",
+      "type": "dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
+      "deviceId": "windows",
       "preLaunchTask": "laravel:serve"
     },
     {
       "name": "Flutter (Android Emulator)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
       "deviceId": "Medium_Phone",
       "preLaunchTask": "laravel:serve"
     },
@@ -29,7 +32,8 @@
       "name": "Flutter (HP fisik LAN)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
       "args": ["--dart-define=API_BASE_URL=http://192.168.50.132:8000"],
       "preLaunchTask": "laravel:serve"
     },
@@ -37,7 +41,8 @@
       "name": "Flutter (pilih device)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
+      "program": "${workspaceFolder}/lib/main.dart",
+      "cwd": "${workspaceFolder}",
       "preLaunchTask": "laravel:serve"
     }
   ]

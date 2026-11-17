@@ -105,14 +105,15 @@ class _AppShellState extends State<AppShell> {
       drawer: isWide
           ? null
           : Drawer(
-              backgroundColor: const Color(0xFF111827),
+              width: 280,
+              backgroundColor: FinKuColors.dark,
               child: SafeArea(child: sidebarWidget),
             ),
       body: Row(
         children: [
           if (isWide)
             SizedBox(
-              width: 260,
+              width: 264,
               child: sidebarWidget,
             ),
           Expanded(
@@ -122,26 +123,32 @@ class _AppShellState extends State<AppShell> {
                   index: _selectedIndex,
                   children: pages,
                 ),
-                // Tombol hamburger untuk mobile/layar sempit
+                // Tombol menu mengapung di kanan bawah agar tidak menutupi
+                // judul halaman pada AppBar tiap layar.
                 if (!isWide)
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 4,
-                    left: 4,
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.menu_rounded,
-                          color: FinKuColors.textPrimary,
-                          size: 24,
-                        ),
-                        tooltip: 'Menu Sidebar',
-                        onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                    left: 18,
+                    bottom: 18 + MediaQuery.of(context).padding.bottom,
+                    child: FloatingActionButton(
+                      heroTag: 'sidebar-menu',
+                      mini: false,
+                      backgroundColor: FinKuColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 3,
+                      tooltip: 'Menu Sidebar',
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      onPressed: () =>
+                          _scaffoldKey.currentState?.openDrawer(),
+                      child: const Icon(Icons.menu_rounded, size: 24),
                     ),
                   ),
                 if ((auth.flashMessage ?? '').isNotEmpty)
-                  _FlashBanner(message: auth.flashMessage!),
+                  _FlashBanner(
+                    message: auth.flashMessage!,
+                    onClose: auth.clearFlash,
+                  ),
               ],
             ),
           ),
@@ -383,12 +390,18 @@ class _FinKuSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF111827), // Tailwind bg-gray-900
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF111827), Color(0xFF0B1120)],
+        ),
+      ),
       child: Column(
         children: [
           // Header / Logo Brand
           Container(
-            height: 64,
+            height: 68,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Color(0xFF1F2937))),
@@ -396,17 +409,17 @@ class _FinKuSidebar extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4F46E5), // Indigo 600
-                    borderRadius: BorderRadius.circular(8),
+                    color: FinKuColors.primary,
+                    borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: FinKuColors.primary.withValues(alpha: 0.45),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),
@@ -415,20 +428,36 @@ class _FinKuSidebar extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13,
-                      letterSpacing: 0.5,
+                      fontSize: 13.5,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Fin-Ku',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Fin-Ku',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                        height: 1.1,
+                      ),
+                    ),
+                    Text(
+                      'Sistem Keuangan',
+                      style: TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -443,14 +472,14 @@ class _FinKuSidebar extends StatelessWidget {
                 final item = entries[i];
                 if (item.isHeader) {
                   return Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 6),
+                    padding: const EdgeInsets.fromLTRB(12, 18, 12, 6),
                     child: Text(
                       item.title.toUpperCase(),
                       style: const TextStyle(
                         color: Color(0xFF6B7280), // Tailwind text-gray-500
-                        fontSize: 11,
+                        fontSize: 10.5,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.9,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   );
@@ -477,20 +506,24 @@ class _FinKuSidebar extends StatelessWidget {
               children: [
                 InkWell(
                   onTap: onProfileTap,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                   child: Container(
                     width: 38,
                     height: 38,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4F46E5),
+                    decoration: BoxDecoration(
+                      color: FinKuColors.primary,
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 2,
+                      ),
                     ),
                     child: Text(
                       Fmt.inisial(user.nama),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -519,12 +552,13 @@ class _FinKuSidebar extends StatelessWidget {
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            user.role.toUpperCase(),
+                            user.role[0].toUpperCase() +
+                                user.role.substring(1),
                             style: const TextStyle(
                               color: Color(0xFF9CA3AF),
                               fontSize: 11,
                               fontWeight: FontWeight.w500,
-                              letterSpacing: 0.4,
+                              letterSpacing: 0.2,
                             ),
                           ),
                         ],
@@ -598,15 +632,31 @@ class _SidebarItemTileState extends State<_SidebarItemTile> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
-              Icon(widget.icon, size: 20, color: iconColor),
-              const SizedBox(width: 12),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
+                width: 3,
+                height: 18,
+                margin: const EdgeInsets.only(right: 9),
+                decoration: BoxDecoration(
+                  color: widget.isActive
+                      ? FinKuColors.primary
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              Icon(
+                widget.icon,
+                size: 20,
+                color: widget.isActive ? const Color(0xFFC7D2FE) : iconColor,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   widget.label,
@@ -628,25 +678,65 @@ class _SidebarItemTileState extends State<_SidebarItemTile> {
 
 /// Banner notifikasi flash di atas layar (sesuai flash message Laravel).
 class _FlashBanner extends StatelessWidget {
-  const _FlashBanner({required this.message});
+  const _FlashBanner({required this.message, required this.onClose});
 
   final String message;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 0,
+      top: MediaQuery.of(context).padding.top + 10,
       left: 0,
       right: 0,
-      child: Material(
-        color: const Color(0xFF15803D),
-        child: SafeArea(
-          bottom: false,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: Text(
-              message,
-              style: const TextStyle(color: Colors.white, fontSize: 13.5),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Material(
+              elevation: 8,
+              shadowColor: Colors.black26,
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF15803D), Color(0xFF166534)],
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: onClose,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 18,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Tutup',
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

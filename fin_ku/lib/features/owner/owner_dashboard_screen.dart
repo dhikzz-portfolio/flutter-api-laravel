@@ -51,17 +51,23 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 720;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Owner')),
+      appBar: AppBar(
+        title: const Text('Dashboard Owner'),
+        actions: [
+          if (wide) const AppBarDate(),
+        ],
+      ),
       backgroundColor: FinKuColors.bg,
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           children: [
             FinKuCard(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
                   Expanded(
@@ -129,49 +135,49 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                 const SizedBox(height: 200),
               ]
             else if (_data != null) ...[
-              Row(
+              const SectionHeader(
+                title: 'Ringkasan Periode',
+                subtitle: 'Penjualan, harga pokok, dan laba kotor',
+              ),
+              const SizedBox(height: 12),
+              ResponsiveStatGrid(
                 children: [
-                  Expanded(
-                    child: StatCard(
-                      label: 'Total Penjualan',
-                      value: Fmt.rupiah(_data!.totalPenjualan),
-                      icon: Icons.payments_outlined,
-                      color: FinKuColors.primary,
-                    ),
+                  StatCard(
+                    label: 'Total Penjualan',
+                    value: Fmt.rupiah(_data!.totalPenjualan),
+                    hint: 'periode ini',
+                    icon: Icons.payments_outlined,
+                    color: FinKuColors.primary,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: StatCard(
-                      label: 'Total HPP',
-                      value: Fmt.rupiah(_data!.totalHpp),
-                      icon: Icons.inventory_outlined,
-                      color: const Color(0xFFB45309),
-                    ),
+                  StatCard(
+                    label: 'Total HPP',
+                    value: Fmt.rupiah(_data!.totalHpp),
+                    hint: 'harga pokok penjualan',
+                    icon: Icons.inventory_outlined,
+                    color: FinKuColors.warning,
+                  ),
+                  StatCard(
+                    label: 'Laba Kotor ${Fmt.namaBulan(_month)} $_year',
+                    value: Fmt.rupiah(_data!.labaKotor),
+                    hint: 'setelah HPP',
+                    icon: Icons.trending_up_rounded,
+                    color: _data!.labaKotor >= 0
+                        ? FinKuColors.success
+                        : FinKuColors.danger,
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              StatCard(
-                label: 'Laba Kotor ${Fmt.namaBulan(_month)} $_year',
-                value: Fmt.rupiah(_data!.labaKotor),
-                icon: Icons.trending_up,
-                color: _data!.labaKotor >= 0
-                    ? FinKuColors.success
-                    : FinKuColors.danger,
-              ),
               const SizedBox(height: 16),
               FinKuCard(
+                padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Grafik Bulanan $_year',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    SectionHeader(
+                      title: 'Grafik Bulanan $_year',
+                      subtitle: 'Perbandingan penjualan dan laba kotor',
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     MonthlyLineChart(months: _data!.months),
                     const SizedBox(height: 10),
                     const ChartLegend(

@@ -123,8 +123,14 @@ class _KasirDashboardScreenState extends State<KasirDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 720;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard Kasir')),
+      appBar: AppBar(
+        title: const Text('Dashboard Kasir'),
+        actions: [
+          if (wide) const AppBarDate(),
+        ],
+      ),
       backgroundColor: FinKuColors.bg,
       body: _loading && _stats == null
           ? const _Skeletons()
@@ -133,58 +139,69 @@ class _KasirDashboardScreenState extends State<KasirDashboardScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
                     children: [
-                      StatCard(
-                        label: 'Penjualan Hari Ini',
-                        value: Fmt.number(_stats?.penjualanHariIni ?? 0),
-                        icon: Icons.receipt,
-                        color: const Color(0xFF15803D),
+                      const SectionHeader(
+                        title: 'Ringkasan Hari Ini',
+                        subtitle: 'Aktivitas penjualan dan stok terkini',
                       ),
                       const SizedBox(height: 12),
-                      StatCard(
-                        label: 'Total Transaksi Hari Ini',
-                        value: Fmt.rupiah(_stats?.totalTransaksi ?? 0),
-                        icon: Icons.payments_outlined,
-                        color: const Color(0xFF4F46E5),
-                      ),
-                      const SizedBox(height: 12),
-                      StatCard(
-                        label: 'Stok Minimum',
-                        value: Fmt.number(_stats?.stokMinimum ?? 0),
-                        icon: Icons.warning_amber_outlined,
-                        color: (_stats?.stokMinimum ?? 0) > 0
-                            ? const Color(0xFFB45309)
-                            : const Color(0xFF6B7280),
+                      ResponsiveStatGrid(
+                        children: [
+                          StatCard(
+                            label: 'Penjualan Hari Ini',
+                            value: Fmt.number(_stats?.penjualanHariIni ?? 0),
+                            hint: 'transaksi',
+                            icon: Icons.receipt_long_outlined,
+                            color: FinKuColors.success,
+                          ),
+                          StatCard(
+                            label: 'Total Transaksi Hari Ini',
+                            value: Fmt.rupiah(_stats?.totalTransaksi ?? 0),
+                            hint: 'omzet',
+                            icon: Icons.payments_outlined,
+                            color: FinKuColors.primary,
+                          ),
+                          StatCard(
+                            label: 'Stok Minimum',
+                            value: Fmt.number(_stats?.stokMinimum ?? 0),
+                            hint: 'produk perlu restok',
+                            icon: Icons.warning_amber_outlined,
+                            color: (_stats?.stokMinimum ?? 0) > 0
+                                ? FinKuColors.warning
+                                : FinKuColors.textSecondary,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
                       _buildTrendCard(),
                       const SizedBox(height: 20),
                       FinKuCard(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Aksi Cepat',
-                              style: TextStyle(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            const SectionHeader(
+                              title: 'Aksi Cepat',
+                              subtitle: 'Mulai pekerjaan tanpa pindah menu',
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
                             Wrap(
                               spacing: 10,
                               runSpacing: 10,
                               children: [
                                 FilledButton.icon(
                                   onPressed: widget.onOpenPenjualan,
-                                  icon: const Icon(Icons.add, size: 18),
+                                  icon: const Icon(Icons.add_rounded, size: 18),
                                   label: const Text('Transaksi Baru'),
                                 ),
                                 OutlinedButton.icon(
                                   onPressed: widget.onOpenPembeli,
-                                  icon: const Icon(Icons.person_add_alt, size: 18),
+                                  icon: const Icon(
+                                    Icons.person_add_alt_1_outlined,
+                                    size: 18,
+                                  ),
                                   label: const Text('Data Pembeli'),
                                 ),
                               ],
@@ -201,15 +218,15 @@ class _KasirDashboardScreenState extends State<KasirDashboardScreen> {
   Widget _buildTrendCard() {
     final trend = _trend;
     return FinKuCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Penjualan 7 Hari Terakhir',
-            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+          const SectionHeader(
+            title: 'Penjualan 7 Hari Terakhir',
+            subtitle: 'Omzet harian dari transaksi tercatat',
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (trend == null)
             SizedBox(
               height: 180,
@@ -262,8 +279,10 @@ class _Skeletons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       children: const [
+        _Box(width: 150, height: 13, radius: 4),
+        SizedBox(height: 14),
         _StatSkeleton(),
         SizedBox(height: 12),
         _StatSkeleton(),
@@ -280,19 +299,21 @@ class _StatSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const FinKuCard(
-      padding: EdgeInsets.all(14),
+      padding: EdgeInsets.all(18),
       child: Row(
         children: [
-          _Box(width: 40, height: 40, radius: 10),
-          SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Box(width: 64, height: 8, radius: 4),
-              SizedBox(height: 6),
-              _Box(width: 96, height: 14, radius: 4),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Box(width: 84, height: 8, radius: 4),
+                SizedBox(height: 8),
+                _Box(width: 110, height: 18, radius: 4),
+              ],
+            ),
           ),
+          SizedBox(width: 12),
+          _Box(width: 46, height: 46, radius: 14),
         ],
       ),
     );

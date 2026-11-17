@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'package:fin_ku/core/models/user_model.dart';
@@ -13,6 +14,10 @@ class _FakeAuthRepo extends AuthRepository {
 }
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('id');
+  });
+
   testWidgets('AppShell renders sidebar with brand and role menus', (tester) async {
     final auth = AuthController(_FakeAuthRepo());
     auth.refreshUser(AppUser(
@@ -59,7 +64,7 @@ void main() {
 
     // Verify User section
     expect(find.text('Admin Toko'), findsOneWidget);
-    expect(find.text('ADMIN'), findsOneWidget);
+    expect(find.text('Admin'), findsOneWidget);
     expect(find.byIcon(Icons.logout_rounded), findsOneWidget);
   });
 }
