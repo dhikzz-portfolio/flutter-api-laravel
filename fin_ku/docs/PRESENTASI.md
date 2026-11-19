@@ -35,6 +35,7 @@
 > *"Saat aplikasi pertama kali dibuka, tampilan yang muncul adalah splash screen dengan logo Fin-Ku dan animasi loading kecil, sementara aplikasi mengecek apakah ada sesi yang tersimpan.*  
 > *Jika belum ada sesi yang valid, user akan diarahkan ke halaman login.*  
 > *Di halaman login, terdapat form username dan password yang diambil dari akun yang sama seperti aplikasi web Fin-Ku. User juga bisa melihat password saat mengetik dengan tombol mata, dan ada tooltip serta keterangan keamanan sesi.*  
+> *Sebagai contoh praktis, saya bisa mencoba memasukkan username `admin` dan password `123456`, kemudian menekan tombol login. Jika kredensial benar, aplikasi langsung menyimpan sesi dan membuka menu sesuai role. Jika salah, akan muncul pesan error dan form siap diisi kembali. Contoh lain, untuk role kasir saya bisa mencoba username `kasir01` dengan password `kasir1234` supaya bisa melihat batasan akses kasir pada menu penjualan dan pembeli.*  
 > *Setelah login berhasil, aplikasi langsung menyimpan token dan membuka menu utama sesuai role pengguna.*  
 > *Fin-Ku memiliki tiga role besar, yaitu **kasir**, **admin**, dan **owner**.*  
 > *Peran kasir umumnya fokus pada transaksi penjualan dan data pembeli.*  
@@ -52,6 +53,7 @@
 > *Ketika dibuka di layar sempit seperti ponsel, sidebar tidak lagi tampil tetap, melainkan diubah menjadi drawer yang bisa dibuka melalui tombol menu.*  
 > *Dengan begitu, aplikasi tetap nyaman digunakan baik di perangkat mobile maupun di tampilan yang lebih lebar.*  
 > *Sidebar juga menampilkan profil pengguna di bagian bawah, berisi inisial nama dan peran, serta tombol logout yang akan meminta konfirmasi sebelum keluar."*
+> *Sebagai contoh, setelah login dengan akun `admin`, di sidebar akan terlihat nama administrator dan peran Admin. Jika saya menekan tombol logout, aplikasi akan menampilkan konfirmasi seperti `Yakin ingin keluar?` dan setelah dikonfirmasi, sesi akan dibatalkan serta layar login kembali muncul.*  
 
 ---
 
@@ -73,6 +75,7 @@
 > *Setelah pembeli dipilih, kasir mencari produk aktif yang tersedia menggunakan kolom pencarian produk.*  
 > *Saat produk dipilih, produk akan masuk ke keranjang dengan jumlah awal satu.*  
 > *Kasir bisa menambah jumlah dengan tombol tambah, mengurangi dengan tombol kurang, mengetik jumlah secara manual, atau menghapus item dari keranjang.*  
+> *Sebagai contoh, setelah memilih pembeli `Budi Santoso`, saya mencari produk `Espresso Kopi`, lalu tekan produk tersebut. Keranjang akan terisi jumlah `1` dengan harga `25000`. Jika pembeli membeli `3`, saya tekan tombol tambah dua kali atau ketik jumlah `3` langsung, sehingga harga item menjadi `75000`. Jika salah, saya tekan kurang atau hapus item, dan total keseluruhan akan ikut berubah.*  
 > *Setiap penyesuaian jumlah akan langsung memperbarui harga per item dan total keseluruhan.*  
 > *Stok produk juga ditampilkan agar kasir tahu ketersediaan barang.*  
 > *Saat tombol simpan ditekan, transaksi dikirim ke server beserta detail produk dan pembeli.*  
@@ -88,6 +91,7 @@
 > *Setiap pembeli menampilkan nama, nomor telepon, dan alamat jika tersedia.*  
 > *Kasir bisa mencari pembeli berdasarkan nama atau telepon, lalu menambah pembeli baru atau mengedit pembeli yang sudah ada.*  
 > *Form pembeli terdiri dari nama wajib diisi, serta telepon dan alamat yang opsional.*  
+> *Sebagai contoh, saya bisa mengisi Nama dengan `Budi Santoso`, Nomor Telepon dengan `081234567890`, dan Alamat dengan `Jl. Merdeka No. 10, Bandung`. Jika hanya nama yang diisi, pembeli tetap bisa disimpan dan muncul di daftar pembeli.*  
 > *Data pembeli ini akan muncul kembali ketika kasir mencatat transaksi penjualan, sehingga pembeli tidak perlu diulang-ulang."*
 
 ---
@@ -123,6 +127,7 @@
 > *Produk bisa dikelompokkan melalui kategori, sehingga lebih mudah dicari dan dikelola.*  
 > *Admin bisa menambah produk baru, yaitu dengan menekan tombol Produk Baru, yang akan membuka form tambah produk.*  
 > *Form ini meminta nama produk, kategori, harga jual, stok awal, dan stok minimum.*  
+> *Sebagai contoh, saat menambah produk baru, saya bisa mengisi Nama Produk dengan `Espresso Kopi`, pilih Kategori `Minuman`, harga jual `25000`, stok awal `50`, dan stok minimum `10`. Setelah disimpan, produk ini akan muncul di daftar produk dan bisa dipilih saat transaksi.*  
 > *Admin juga bisa membuka form edit untuk mengubah informasi produk, seperti nama, kategori, harga jual, stok minimum, dan status.*  
 > *Saat produk dinonaktifkan, produk tidak akan muncul lagi dalam pencarian transaksi.*  
 > *Di sisi owner, fitur produk hanya berupa tampilan baca saja, karena hak edit produk sengaja dibatasi agar hanya admin yang mengelola katalog secara langsung."*
@@ -134,6 +139,7 @@
 > *"Fitur Kategori digunakan untuk mengelompokkan produk agar lebih terstruktur.*  
 > *Admin bisa melihat daftar kategori yang aktif atau nonaktif, serta jumlah produk di dalamnya.*  
 > *Admin juga bisa menambah kategori baru dan mengedit kategori yang sudah ada, termasuk mengubah statusnya menjadi nonaktif bila kategori tersebut tidak lagi digunakan.*  
+> *Sebagai contoh, saya bisa menambah kategori baru dengan nama `Minuman`, kemudian mengeditnya menjadi `Minuman Hangat` jika perlu, atau menonaktifkannya bila tidak digunakan. Kategori yang sudah dipakai produk tidak bisa dihapus agar data produk tetap rapi.*  
 > *Kategori yang sudah dipakai oleh produk tidak bisa dihapus sembarangan karena akan mempengaruhi data produk yang merujuk kepadanya.*  
 > *Owner hanya dapat melihat kategori dalam mode baca tanpa bisa mengubahnya."*
 
@@ -144,6 +150,7 @@
 > *"Untuk proses pembelian, distributor atau supplier berperan penting.*  
 > *Di menu Distributor, admin bisa mengelola data distributor, yaitu menambah distributor baru dan mengedit distributor yang sudah ada.*  
 > *Form distributor meminta nama, telepon, dan alamat.*  
+> *Sebagai contoh, saya bisa menambah distributor dengan Nama `PT Sang Nyawa Sukses`, Telepon `081299887766`, dan Alamat `Jl. Supplier No. 25, Jakarta`. Distributor ini nanti akan muncul saat membuat pembelian baru.*  
 > *Setiap distributor yang muncul di daftar juga akan menampilkan jumlah transaksi pembelian yang pernah dilakukan kepadanya.*  
 > *Dengan begitu, admin bisa lebih mudah menelusuri supplier mana yang sering digunakan dalam pembelian barang."*
 
@@ -156,6 +163,7 @@
 > *Status pembelian juga ditandai dengan chip Aktif atau Dibatalkan.*  
 > *Admin bisa mencari pembelian berdasarkan invoice atau nama distributor, serta menyaring berdasarkan rentang tanggal.*  
 > *Untuk membuat pembelian baru, admin menekan tombol Pembelian Baru, lalu memilih distributor dan memilih produk beserta jumlah dan harga beli.*  
+> *Sebagai contoh, saya memilih distributor `PT Sang Nyawa Sukses`, lalu menambahkan produk `Espresso Kopi` dengan jumlah `20` dan harga beli `18000`. Jika saya menambahkan lagi produk `Kopi Kapal Api` jumlah `10` harga beli `15000`, total pembelian akan terhitung otomatis. Setelah disimpan, stok produk bertambah sesuai jumlah yang dimasukkan.*  
 > *Setiap produk yang dimasukkan akan ditambahkan ke keranjang pembelian, dan total akan diperbarui secara otomatis.*  
 > *Pada form pembelian, harga beli bisa disesuaikan, dan sistem menyimpan data beserta detail produknya.*  
 > *Pembelian yang sudah dibuat bisa dibuka detailnya, dan jika perlu, admin bisa membatalkannya setelah konfirmasi.*  
@@ -169,6 +177,7 @@
 > *Misalnya, barang yang rusak, kedaluwarsa, diberikan kepada pihak lain, atau keluar untuk keperluan lain dengan keterangan tertentu.*  
 > *Admin bisa melihat daftar barang keluar, menyaring berdasarkan rentang tanggal, dan membuka detail masing-masing dokumen.*  
 > *Untuk membuat barang keluar baru, admin menekan tombol Catat Keluar, lalu memilih beberapa produk beserta jumlah dan jenis keluarannya.*  
+> *Sebagai contoh, saya memilih produk `Espresso Kopi`, jumlah `2`, jenis `Rusak`, lalu menambahkan keterangan `Kemasan sobek`. Jika stok saat ini hanya `5`, form akan menolak jika jumlah yang dimasukkan lebih dari `5`, agar data stok tetap akurat.*  
 > *Jenis yang tersedia biasanya seperti Rusak, Expired, Diberikan, dan Lainnya.*  
 > *Admin juga bisa menambahkan keterangan umum maupun keterangan per item.*  
 > *Form ini akan mencegah entry jika jumlah melebihi stok yang tersedia, agar data stok tetap realistis."*
@@ -182,6 +191,7 @@
 > *Di dalam form koreksi baru, admin bisa memilih produk dan memasukkan selisih yang ditemukan saat pencacahan ulang.*  
 > *Misalnya, jika stok sistem menunjukkan 50, tetapi persediaan fisik hanya 48, maka selisih yang dimasukkan adalah -2.*  
 > *Form koreksi juga bisa mencantumkan alasan atau keterangan tambahan.*  
+> *Sebagai contoh, saya bisa mencantumkan alasan seperti `Selisih pencacahan tanggal 10` atau `Barang rusak tidak tercatat`. Dengan alasan yang jelas, riwayat stok dan laporan keuangan lebih mudah ditelusuri nanti.*  
 > *Fitur ini sangat penting dalam manajemen stok karena stok yang tidak akurat bisa menyebabkan overselling atau kesalahan dalam laporan keuangan."*
 
 ---
@@ -200,6 +210,7 @@
 > *"Beralih ke role owner, tampilan yang muncul adalah Dashboard Owner.*  
 > *Owner tidak perlu mencatat transaksi operasional seperti kasir atau admin, melainkan mengawasi performa usaha secara keseluruhan.*  
 > *Di dashboard ini, owner bisa memilih bulan dan tahun, lalu melihat ringkasan periode tersebut, yaitu total penjualan, total HPP, dan laba kotor.*  
+> *Sebagai contoh, saya bisa memilih Bulan `Januari` dan Tahun `2026`, lalu menekan tombol lihat ringkasan. Jika saya tidak memilih bulan, aplikasi akan menampilkan ringkasan untuk seluruh tahun berjalan. Contoh hasilnya, total penjualan misalnya `15.000.000`, total HPP `9.500.000`, dan laba kotor `5.500.000` yang ditampilkan dalam warna yang menunjukkan untung.*  
 > *Laba kotor dihitung sebagai selisih antara total penjualan dengan total HPP untuk periode yang dipilih.*  
 > *Jika laba kotor bernilai positif, nilainya ditampilkan dalam warna yang menunjukkan untung; jika negatif, ditampilkan dalam warna yang menunjukkan rugi.*  
 > *Dashboard owner juga dilengkapi grafik garis bulanan yang menunjukkan perbandingan penjualan dan laba kotor selama setahun.*  
@@ -211,6 +222,7 @@
 
 > *"Fitur laporan laba/rugi adalah salah satu fitur paling penting bagi owner, karena disini owner bisa melihat detail keuangan secara lebih lengkap.*  
 > *Laporan ini bisa difilter berdasarkan tahun dan bulan.*  
+> *Sebagai contoh, saya bisa memilih Tahun `2026` dan Bulan `Mei` untuk melihat laporan laba rugi bulan Mei saja. Jika saya hanya memilih Tahun `2026` tanpa bulan, laporan akan menampilkan seluruh bulan dalam tahun tersebut. Dari sini saya bisa menekan tombol ekspor ke Excel atau PDF untuk menyimpan atau mengirim laporan.*  
 > *Jika bulan tidak dipilih, laporan akan menampilkan seluruh tahun.*  
 > *Di dalam laporan, owner bisa melihat ringkasan total penjualan, total HPP, dan laba kotor untuk periode yang dipilih.*  
 > *Laporan juga menampilkan grafik bulanan penjualan dan laba kotor, serta tabel breakdown bulanan yang memuat penjualan, HPP, dan laba kotor per bulan.*  
@@ -227,6 +239,7 @@
 > *Owner bisa mencari user berdasarkan nama atau username, dan menyaring berdasarkan role, yaitu kasir, admin, atau owner.*  
 > *Owner juga bisa menambah user baru, mengedit user yang sudah ada, maupun menghapus user.*  
 > *Form tambah atau edit user meminta nama, username, password minimal enam karakter, role, dan status.*  
+> *Sebagai contoh, saat menambah user kasir baru, saya bisa mengisi Nama `Siti Rahayu`, Username `kasir02`, Password `kasir02`, lalu pilih Role `kasir` dan Status `Aktif`. Jika mengedit user yang sudah ada dan tidak ingin mengubah password, kolom password dikosongkan saja. Owner tidak bisa menghapus akun pribadinya sendiri.*  
 > *Saat mengedit, password bisa dikosongkan jika owner tidak ingin mengubahnya.*  
 > *Owner tidak bisa menghapus akun mereka sendiri untuk mencegah penguncian diri secara tidak sengaja.*  
 > *Dengan fitur ini, owner memiliki kendali penuh terhadap siapa yang bisa login ke aplikasi."*
@@ -240,6 +253,7 @@
 > *Halaman ini juga menyediakan fitur yang sangat praktis, yaitu pengaturan alamat server API.*  
 > *Karena aplikasi mobile ini terhubung ke server, kadang-kadang alamat server perlu disesuaikan, terutama jika aplikasi dijalankan bersama server lokal atau server pengembangan.*  
 > *Pengguna bisa mengubah base URL, menyimpannya, mengembalikannya ke default, atau mencoba koneksi untuk memastikan server dapat dijangkau dan sesi masih valid.*  
+> *Sebagai contoh, jika server lokal berjalan di `http://192.168.1.10:8000`, saya bisa mengubah base URL menjadi alamat itu, lalu menekan tombol simpan dan mencoba koneksi untuk memastikan aplikasi bisa berkomunikasi dengan server. Jika ingin kembali ke pengaturan awal, saya bisa menekan tombol kembali ke default.*  
 > *Di halaman yang sama, pengguna juga bisa logout setelah konfirmasi, sehingga sesi akan dicabut di server dan token lokal akan dihapus."*
 
 ---
