@@ -18,14 +18,14 @@
       "isBackground": true,
       "problemMatcher": {
         "owner": "laravel",
-        "severity": "info",
         "pattern": {
-          "regexp": "^.*$"
+          "regexp": "^\\[laravel\\] galat:\\s+(.*)$",
+          "message": 1
         },
         "background": {
           "activeOnStart": true,
-          "beginsPattern": ".*(Menjalankan Laravel|Server running on|port .* sudah).*",
-          "endsPattern": ".*Server running on.*"
+          "beginsPattern": "^\\[laravel\\] memulai",
+          "endsPattern": "(\\[laravel\\] siap di|Server running on)"
         }
       },
       "presentation": {
